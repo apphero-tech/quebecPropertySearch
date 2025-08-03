@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
+    <labels>
+        <fullName>QuebecPropertySearch_ConfigError</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Erreur de configuration du composant de recherche de propriétés</shortDescription>
+        <value>Erreur de configuration</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_SearchError</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Erreur générale de recherche de propriétés</shortDescription>
+        <value>Une erreur s'est produite lors de la recherche</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_NoResults</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Message quand aucun résultat n'est trouvé</shortDescription>
+        <value>Aucune propriété trouvée pour cette recherche</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_SearchSuccess</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Message de succès pour la recherche</shortDescription>
+        <value>Recherche réussie</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_PropertiesFound</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Message indiquant le nombre de propriétés trouvées</shortDescription>
+        <value>propriété(s) trouvée(s)</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_LoadingMessage</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Message de chargement pendant la recherche</shortDescription>
+        <value>Recherche en cours...</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_SearchButton</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Texte du bouton de recherche</shortDescription>
+        <value>Rechercher</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_AddressSearch</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Label pour la recherche par adresse</shortDescription>
+        <value>Recherche par Adresse</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_OwnerSearch</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Label pour la recherche par propriétaire</shortDescription>
+        <value>Recherche par Propriétaire</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_MatriculeSearch</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Label pour la recherche par matricule</shortDescription>
+        <value>Recherche par Matricule</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_LotSearch</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Label pour la recherche par lot</shortDescription>
+        <value>Recherche par Lot</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_StreetLabel</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Label pour le champ voie publique</shortDescription>
+        <value>Voie publique</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_StreetPlaceholder</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Placeholder pour le champ voie publique</shortDescription>
+        <value>Ex: SAINT-CHARLES</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_NumberLabel</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Label pour le champ numéro civique</shortDescription>
+        <value>Numéro civique</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_NumberPlaceholder</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Placeholder pour le champ numéro civique</shortDescription>
+        <value>Ex: 2755</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_LastNameLabel</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Label pour le champ nom de famille</shortDescription>
+        <value>Nom de famille</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_LastNamePlaceholder</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Placeholder pour le champ nom de famille</shortDescription>
+        <value>Ex: BRIEN</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_FirstNameLabel</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Label pour le champ prénom</shortDescription>
+        <value>Prénom</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_FirstNamePlaceholder</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Placeholder pour le champ prénom</shortDescription>
+        <value>Ex: RITA</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_MatriculeLabel</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Label pour le champ matricule</shortDescription>
+        <value>Numéro de matricule</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_MatriculePlaceholder</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Placeholder pour le champ matricule</shortDescription>
+        <value>Ex: 7734-20-9033-7-000-0000</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_LotLabel</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Label pour le champ numéro de lot</shortDescription>
+        <value>Numéro de lot</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_LotPlaceholder</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Placeholder pour le champ numéro de lot</shortDescription>
+        <value>Ex: 1992963</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_ResultsTitle</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Titre de la section résultats</shortDescription>
+        <value>Résultats</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_OwnerLabel</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Label pour le propriétaire dans les résultats</shortDescription>
+        <value>Propriétaire:</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_MatriculeResultLabel</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Label pour le matricule dans les résultats</shortDescription>
+        <value>Matricule:</value>
+    </labels>
+    <labels>
+        <fullName>QuebecPropertySearch_PropertySearchTitle</fullName>
+        <language>fr</language>
+        <protected>false</protected>
+        <shortDescription>Titre du composant de recherche de propriétés</shortDescription>
+        <value>Recherche de propriétés foncières</value>
+    </labels>
+</CustomLabels> 

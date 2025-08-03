@@ -1,0 +1,15 @@
+{
+    "packageDirectories": [
+        {
+            "path": "force-app",
+            "default": true,
+            "package": "QuebecPropertySearch",
+            "versionName": "Version 1.0.0",
+            "versionNumber": "1.0.0.NEXT",
+            "definitionFile": "config/project-scratch-def.json"
+        }
+    ],
+    "namespace": "",
+    "sfdcLoginUrl": "https://login.salesforce.com",
+    "sourceApiVersion": "60.0"
+} 

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>60.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>Recherche de Propriétés Québec</masterLabel>
+    <description>Composant de recherche de propriétés pour les municipalités du Québec</description>
+    <targets>
+        <target>lightning__AppPage</target>
+        <target>lightning__HomePage</target>
+        <target>lightning__RecordPage</target>
+        <target>lightning__FlowScreen</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__AppPage,lightning__HomePage,lightning__RecordPage,lightning__FlowScreen">
+            <property name="municipalityCode" type="String" label="Code Municipalité" 
+                      description="Code unique de la municipalité (ex: 66102 pour Kirkland)" 
+                      required="true" />
+            <property name="apiKey" type="String" label="Clé d'accès API" 
+                      description="Clé sécurisée pour accéder aux données de cette municipalité" 
+                      required="true" />
+            <property name="municipalityName" type="String" label="Nom de la municipalité" 
+                      description="Nom affiché de la municipalité (ex: Kirkland)" 
+                      default="Ma municipalité" />
+            <property name="showMunicipalityName" type="Boolean" label="Afficher nom municipalité" 
+                      description="Afficher le nom de la municipalité dans l'en-tête du composant" 
+                      default="true" />
+            <property name="maxResults" type="Integer" label="Nombre max de résultats" 
+                      description="Nombre maximum de résultats à afficher (1-50)" 
+                      default="10" />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

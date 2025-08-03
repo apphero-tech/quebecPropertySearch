@@ -1,0 +1,68 @@
+/* Custom styles for the component */
+.slds-card {
+    margin-bottom: 1rem;
+}
+
+.slds-notify {
+    margin-bottom: 1rem;
+}
+
+.slds-text-heading_medium {
+    color: #080707;
+}
+
+.slds-text-color_success {
+    color: #04844b;
+}
+
+.slds-text-color_weak {
+    color: #706e6b;
+}
+
+/* ===== DROPDOWN POSITIONING - SIMPLE AND CLEAN ===== */
+.slds-form-element__control {
+    position: relative;
+}
+
+.street-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: white;
+    border: 1px solid #dddbda;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 2px;
+}
+
+.street-dropdown .slds-listbox__option {
+    cursor: pointer;
+    padding: 0.5rem;
+}
+
+.street-dropdown .slds-listbox__option:hover {
+    background-color: #f3f2f2;
+}
+
+.street-dropdown .slds-listbox__option_entity {
+    border-bottom: 1px solid #f3f2f2;
+}
+
+.street-dropdown .slds-listbox__option_entity:last-child {
+    border-bottom: none;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .slds-grid {
+        flex-direction: column;
+    }
+    
+    .slds-col {
+        margin-bottom: 1rem;
+    }
+}
