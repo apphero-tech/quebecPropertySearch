@@ -132,18 +132,153 @@
                 <template if:true={showPropertyDetails}>
                     <div class="slds-box slds-theme_default">
                         <h3 class="slds-text-heading_small slds-m-bottom_small">
-                            📍 Propriété trouvée
+                            🏠 {propertyAddress}
                         </h3>
-                        <div class="slds-grid slds-wrap">
-                            <div class="slds-col slds-size_1-of-2">
-                                <p><strong>Adresse :</strong> {propertyAddress}</p>
-                                <p if:true={propertyPostalCode}><strong>Code postal :</strong> {propertyPostalCode}</p>
-                            </div>
-                            <div class="slds-col slds-size_1-of-2">
-                                <p if:true={propertyOwner}><strong>Propriétaire :</strong> {propertyOwner}</p>
-                                <p if:true={propertyValue}><strong>Valeur :</strong> {propertyValue}</p>
-                            </div>
-                        </div>
+                        
+                        <!-- Accordéons pour les sections du rôle d'évaluation -->
+                        <lightning-accordion allow-multiple-sections-open class="property-details-accordion">
+                            
+                            <!-- En-tête du rôle -->
+                            <lightning-accordion-section name="header" label="📋 En-tête du rôle">
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <p><strong>Code géographique :</strong> {propertyDetails.RLM01A}</p>
+                                        <p><strong>Millésime :</strong> {propertyDetails.RLM02A}</p>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <p><strong>Version :</strong> {propertyDetails.VERSION}</p>
+                                    </div>
+                                </div>
+                            </lightning-accordion-section>
+                            
+                            <!-- Section 1 : Identification de l'unité d'évaluation -->
+                            <lightning-accordion-section name="identification" label="📍 Section 1 : Identification de l'unité d'évaluation">
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <p><strong>Adresse :</strong> {fullAddress}</p>
+                                        <p><strong>Code postal :</strong> {formattedPostalCode}</p>
+                                        <p><strong>Matricule :</strong> {matricule}</p>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <p><strong>Numéro de lot :</strong> {lotNumber}</p>
+                                        <p><strong>Numéro d'ordre :</strong> {orderNumber}</p>
+                                        <p><strong>Numéro de dossier :</strong> {fileNumber}</p>
+                                        <p><strong>Numéro de cadastre :</strong> {cadastreNumber}</p>
+                                    </div>
+                                </div>
+                            </lightning-accordion-section>
+                            
+                            <!-- Section 2 : Identification du propriétaire -->
+                            <lightning-accordion-section name="owner" label="👤 Section 2 : Identification du propriétaire">
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <p><strong>Nom du propriétaire :</strong> {ownerName}</p>
+                                        <p if:true={ownerFirstName}><strong>Prénom du propriétaire :</strong> {ownerFirstName}</p>
+                                        <p><strong>Type de propriétaire :</strong> {ownerType}</p>
+                                        <p><strong>Adresse du propriétaire :</strong> {ownerFullAddress}</p>
+                                        <p><strong>Date d'acquisition :</strong> {acquisitionDate}</p>
+                                        <p><strong>Nombre de propriétaires :</strong> {ownerCount}</p>
+                                    </div>
+                                </div>
+                            </lightning-accordion-section>
+                            
+                            <!-- Section 3 : Caractéristiques du terrain -->
+                            <lightning-accordion-section name="land" label="🌍 Section 3 : Caractéristiques du terrain">
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <p><strong>Mesure frontale :</strong> {frontage}</p>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <p><strong>Superficie :</strong> {area}</p>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <p><strong>Facteur d'ajustement :</strong> {adjustmentFactor}</p>
+                                    </div>
+                                </div>
+                            </lightning-accordion-section>
+                            
+                            <!-- Section 4 : Valeurs portées au rôle -->
+                            <lightning-accordion-section name="values" label="💰 Section 4 : Valeurs portées au rôle">
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <p><strong>Date de référence :</strong> {referenceDate}</p>
+                                        <p><strong>Valeur du terrain :</strong> {landValue}</p>
+                                        <p><strong>Valeur du bâtiment :</strong> {buildingValue}</p>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <p><strong>Valeur de l'immeuble :</strong> {propertyValue}</p>
+                                        <p><strong>Valeur imposable :</strong> {taxableValue}</p>
+                                    </div>
+                                </div>
+                            </lightning-accordion-section>
+                            
+                            <!-- Section 5 : Exonérations -->
+                            <lightning-accordion-section name="exemptions" label="🏛️ Section 5 : Exonérations">
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <div class="slds-col slds-size_1-of-1">
+                                        <p><strong>Valeur exonérée :</strong> {exemptValue}</p>
+                                        <template if:true={exemptionDetails.length}>
+                                            <p><strong>Détails des exonérations :</strong></p>
+                                            <template for:each={exemptionDetails} for:item="exemption">
+                                                <div key={exemption.code} class="slds-box slds-m-top_x-small exemption-details">
+                                                    <p><strong>Code :</strong> {exemption.code}</p>
+                                                    <p><strong>Valeur :</strong> {exemption.value}</p>
+                                                    <p><strong>Type :</strong> {exemption.type}</p>
+                                                    <p if:true={exemption.description}><strong>Description :</strong> {exemption.description}</p>
+                                                </div>
+                                            </template>
+                                        </template>
+                                    </div>
+                                </div>
+                            </lightning-accordion-section>
+                            
+                            <!-- Section 6 : Déclaration de dépôt du rôle par l'évaluateur -->
+                            <lightning-accordion-section name="evaluator" label="📝 Section 6 : Déclaration de dépôt du rôle par l'évaluateur">
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <p><strong>Nom de l'évaluateur :</strong> {evaluatorName}</p>
+                                        <p><strong>Prénom de l'évaluateur :</strong> {evaluatorFirstName}</p>
+                                        <p><strong>Titre :</strong> {evaluatorTitle}</p>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <p><strong>Organisme municipal :</strong> {evaluatorOrganization}</p>
+                                        <p><strong>Date de signature :</strong> {signatureDate}</p>
+                                        <p><strong>Lieu de signature :</strong> {signatureLocation}</p>
+                                    </div>
+                                </div>
+                            </lightning-accordion-section>
+                            
+                            <!-- Informations annexables globales -->
+                            <lightning-accordion-section name="global" label="📊 Informations annexables globales">
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <p><strong>Version des informations :</strong> {globalInfoVersion}</p>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <p><strong>Date de mise à jour :</strong> {globalInfoDate}</p>
+                                    </div>
+                                </div>
+                            </lightning-accordion-section>
+                            
+                            <!-- Informations annexables unité -->
+                            <lightning-accordion-section name="unit" label="🏢 Informations annexables unité">
+                                <div class="slds-grid slds-wrap slds-gutters">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <p><strong>Nombre d'unités :</strong> {unitCount}</p>
+                                        <p><strong>Superficie unitaire :</strong> {unitArea}</p>
+                                        <p><strong>Valeur unitaire :</strong> {unitValue}</p>
+                                        <p><strong>Valeur foncière unitaire :</strong> {landUnitValue}</p>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <p><strong>Type de propriété :</strong> {propertyType}</p>
+                                        <p><strong>Catégorie :</strong> {propertyCategory}</p>
+                                        <p><strong>Date d'évaluation :</strong> {evaluationDate}</p>
+                                        <p><strong>Valeur bâtiment unitaire :</strong> {buildingUnitValue}</p>
+                                    </div>
+                                </div>
+                            </lightning-accordion-section>
+                            
+                        </lightning-accordion>
                     </div>
                 </template>
                 

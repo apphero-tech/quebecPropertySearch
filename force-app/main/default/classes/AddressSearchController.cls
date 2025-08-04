@@ -518,7 +518,7 @@ public with sharing class AddressSearchController {
      * @return Détails de la propriété
      */
     @AuraEnabled(cacheable=true)
-    public static PropertyDetails getPropertyDetails(String streetName, String streetNumber, String municipalityCode, String apiKey) {
+    public static Map<String, Object> getPropertyDetails(String streetName, String streetNumber, String municipalityCode, String apiKey) {
         try {
             System.debug('=== AddressSearchController.getPropertyDetails START ===');
             System.debug('Street: ' + streetName + ', Number: ' + streetNumber);
@@ -601,13 +601,13 @@ public with sharing class AddressSearchController {
                 return null;
             }
             
-            // ✅ ÉTAPE 4 : Parser le document complet
-            PropertyDetails details = parseCompletePropertyDetails(documentRes.getBody());
+            // ✅ ÉTAPE 4 : Parser le document complet et retourner directement le Map
+            Map<String, Object> document = parseCompletePropertyDetails(documentRes.getBody());
             
-            System.debug('Final details: ' + details);
+            System.debug('Final document: ' + document);
             System.debug('=== AddressSearchController.getPropertyDetails END ===');
             
-            return details;
+            return document;
             
         } catch (Exception e) {
             System.debug('Exception in getPropertyDetails: ' + e.getMessage());
@@ -641,9 +641,9 @@ public with sharing class AddressSearchController {
     /**
      * Parsing du document complet MongoDB
      * @param jsonResponse La réponse JSON de l'API document
-     * @return Détails de la propriété
+     * @return Document MongoDB complet
      */
-    private static PropertyDetails parseCompletePropertyDetails(String jsonResponse) {
+    private static Map<String, Object> parseCompletePropertyDetails(String jsonResponse) {
         try {
             // Parsing du JSON principal
             Object jsonObj = JSON.deserializeUntyped(jsonResponse);
@@ -656,46 +656,8 @@ public with sharing class AddressSearchController {
             Map<String, Object> document = (Map<String, Object>) jsonObj;
             System.debug('Complete document keys: ' + document.keySet());
             
-            // ✅ Extraction des informations générales du document racine
-            PropertyDetails details = new PropertyDetails();
-            details.roleYear = String.valueOf(document.get('RLM02A')); // Année du rôle
-            details.municipalityCode = String.valueOf(document.get('RLM01A')); // Code municipalité
-            details.version = String.valueOf(document.get('VERSION')); // Version
-            
-            System.debug('General info - Role Year: ' + details.roleYear);
-            System.debug('General info - Municipality Code: ' + details.municipalityCode);
-            System.debug('General info - Version: ' + details.version);
-            
-            // Extraction de RLUEx
-            Object rluexObj = document.get('RLUEx');
-            if (!(rluexObj instanceof Map<String, Object>)) {
-                System.debug('RLUEx is not a Map');
-                return null;
-            }
-            Map<String, Object> rluex = (Map<String, Object>) rluexObj;
-            
-            // ✅ Extraction des données d'adresse (RL0101)
-            PropertyDetails addressData = extractAddressData(rluex);
-            if (addressData == null) {
-                System.debug('Failed to extract address data');
-                return null;
-            }
-            
-            // Fusionner les données d'adresse avec details existant
-            details.streetNumber = addressData.streetNumber;
-            details.streetName = addressData.streetName;
-            details.streetType = addressData.streetType;
-            details.postalCode = addressData.postalCode;
-            details.fullAddress = addressData.fullAddress;
-            
-            // ✅ Extraction des données de propriétaire (RL0201)
-            extractOwnerData(rluex, details);
-            
-            // ✅ Extraction des valeurs (RL0401-05)
-            extractValueData(rluex, details);
-            
-            System.debug('Complete property details: ' + details);
-            return details;
+            // Retourner directement le document MongoDB complet
+            return document;
             
         } catch (Exception e) {
             System.debug('Exception in parseCompletePropertyDetails: ' + e.getMessage());
@@ -788,6 +750,7 @@ public with sharing class AddressSearchController {
      * @param jsonResponse La réponse JSON de l'API
      * @return Détails de la propriété
      */
+    /*
     private static PropertyDetails parsePropertyDetails(String jsonResponse) {
         try {
             if (String.isBlank(jsonResponse)) {
@@ -870,12 +833,14 @@ public with sharing class AddressSearchController {
             return null;
         }
     }
+    */
     
     /**
      * Extraction des données d'adresse depuis RL0101
      * @param rluex L'objet RLUEx
-     * @return Détails de propriété avec adresse
+     * @return Détails de propriété avec les données d'adresse
      */
+    /*
     private static PropertyDetails extractAddressData(Map<String, Object> rluex) {
         try {
             Object rl0101Obj = rluex.get('RL0101');
@@ -892,16 +857,13 @@ public with sharing class AddressSearchController {
             }
             Map<String, Object> addressData = (Map<String, Object>) rl0101xObj;
             
-            // Extraction sécurisée des valeurs
+            PropertyDetails details = new PropertyDetails();
+            
             String streetNumber = String.valueOf(addressData.get('RL0101Ax'));
+            String streetType = String.valueOf(addressData.get('RL0101Ex'));
             String streetName = String.valueOf(addressData.get('RL0101Gx'));
-            String streetTypeCode = String.valueOf(addressData.get('RL0101Ex'));
             String postalCode = String.valueOf(addressData.get('POSTALCODE'));
             
-            // Conversion du type de rue
-            String streetType = convertStreetType(streetTypeCode);
-            
-            PropertyDetails details = new PropertyDetails();
             details.streetNumber = streetNumber;
             details.streetName = streetName;
             details.streetType = streetType;
@@ -915,12 +877,14 @@ public with sharing class AddressSearchController {
             return null;
         }
     }
+    */
     
     /**
      * Extraction des données de propriétaire depuis RL0201
      * @param rluex L'objet RLUEx
      * @param details Les détails de propriété à compléter
      */
+    /*
     private static void extractOwnerData(Map<String, Object> rluex, PropertyDetails details) {
         try {
             Object rl0201Obj = rluex.get('RL0201');
@@ -951,12 +915,14 @@ public with sharing class AddressSearchController {
             System.debug('Exception in extractOwnerData: ' + e.getMessage());
         }
     }
+    */
     
     /**
      * Extraction des valeurs de propriété depuis RL0401-05
      * @param rluex L'objet RLUEx
      * @param details Les détails de propriété à compléter
      */
+    /*
     private static void extractValueData(Map<String, Object> rluex, PropertyDetails details) {
         try {
             String landValue = String.valueOf(rluex.get('RL0402A'));
@@ -975,10 +941,13 @@ public with sharing class AddressSearchController {
             System.debug('Exception in extractValueData: ' + e.getMessage());
         }
     }
+    */
     
     /**
      * Classe pour représenter les détails d'une propriété
+     * NOTE: Cette classe n'est plus utilisée car nous retournons maintenant le document MongoDB complet
      */
+    /*
     public class PropertyDetails {
         // 📍 Adresse
         @AuraEnabled public String streetNumber;
@@ -1005,4 +974,5 @@ public with sharing class AddressSearchController {
         @AuraEnabled public String municipalityCode;
         @AuraEnabled public String version;
     }
+    */
 } 

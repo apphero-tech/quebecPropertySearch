@@ -92,4 +92,106 @@
         padding: 0;
         margin-bottom: 0.5rem;
     }
+}
+
+/* Styles pour les accordéons du rôle d'évaluation */
+.property-details-accordion {
+    margin-top: 1rem;
+}
+
+.property-details-accordion lightning-accordion-section {
+    border-bottom: 1px solid #dddbda;
+}
+
+.property-details-accordion lightning-accordion-section:last-child {
+    border-bottom: none;
+}
+
+/* Styles pour les sections de données */
+.data-section {
+    padding: 0.5rem 0;
+}
+
+.data-section p {
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+}
+
+.data-section strong {
+    color: #514f4d;
+    font-weight: 600;
+}
+
+/* Styles pour les valeurs monétaires */
+.currency-value {
+    font-family: 'Salesforce Sans', Arial, sans-serif;
+    font-weight: 600;
+    color: #04844b;
+}
+
+/* Styles pour les dates */
+.date-value {
+    color: #706e6b;
+    font-style: italic;
+}
+
+/* Styles pour les mesures */
+.measure-value {
+    font-weight: 600;
+    color: #0176d3;
+}
+
+/* Styles pour les exonérations */
+.exemption-details {
+    background-color: #f8f9fa;
+    border-left: 3px solid #ffb75d;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.exemption-details p {
+    margin-bottom: 0.25rem;
+}
+
+/* Styles pour les informations annexables */
+.annexable-info {
+    background-color: #f3f2f2;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+/* Amélioration de l'espacement des accordéons */
+lightning-accordion-section {
+    margin-bottom: 0.5rem;
+}
+
+lightning-accordion-section .slds-accordion__section {
+    border: 1px solid #dddbda;
+    border-radius: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Styles pour les icônes dans les labels */
+.accordion-label-icon {
+    margin-right: 0.5rem;
+    font-size: 1.1em;
+}
+
+/* Responsive pour les accordéons */
+@media (max-width: 768px) {
+    .slds-grid.slds-wrap.slds-gutters {
+        margin: 0;
+    }
+    
+    .slds-col.slds-size_1-of-3 {
+        width: 100%;
+        padding: 0;
+        margin-bottom: 0.5rem;
+    }
+    
+    .data-section p {
+        margin-bottom: 0.75rem;
+    }
 } 
