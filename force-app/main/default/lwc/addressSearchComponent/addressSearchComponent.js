@@ -336,13 +336,17 @@ export default class AddressSearchComponent extends LightningElement {
     }
     
     /**
-     * Formater une date au format dd/mm/yyyy
+     * Formater une date au format dd/mm/yyyy pour le Québec
      */
     formatDate(dateString) {
         if (!dateString) return 'Non disponible';
         try {
             const date = new Date(dateString);
-            return date.toLocaleDateString('fr-CA');
+            return date.toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
         } catch (error) {
             return dateString;
         }
@@ -362,6 +366,46 @@ export default class AddressSearchComponent extends LightningElement {
     formatFrontage(frontage) {
         if (!frontage || frontage === '0') return 'Non disponible';
         return `${parseFloat(frontage).toLocaleString('fr-CA')} m`;
+    }
+
+    /**
+     * Fonction utilitaire pour l'accès sécurisé aux propriétés
+     */
+    getSecureValue(obj, path, defaultValue = 'Non disponible') {
+        try {
+            const keys = path.split('.');
+            let current = obj;
+            for (const key of keys) {
+                if (current === null || current === undefined) {
+                    return defaultValue;
+                }
+                current = current[key];
+            }
+            return current !== null && current !== undefined ? current : defaultValue;
+        } catch (error) {
+            console.log(`Erreur accès sécurisé ${path}:`, error);
+            return defaultValue;
+        }
+    }
+
+    /**
+     * Fonction utilitaire pour l'accès sécurisé aux tableaux
+     */
+    getSecureArray(obj, path, defaultValue = []) {
+        try {
+            const keys = path.split('.');
+            let current = obj;
+            for (const key of keys) {
+                if (current === null || current === undefined) {
+                    return defaultValue;
+                }
+                current = current[key];
+            }
+            return Array.isArray(current) ? current : defaultValue;
+        } catch (error) {
+            console.log(`Erreur accès sécurisé tableau ${path}:`, error);
+            return defaultValue;
+        }
     }
     
     /**
@@ -683,6 +727,601 @@ export default class AddressSearchComponent extends LightningElement {
     get cadastreNumber() {
         if (!this.propertyDetails?.RLUEx?.RL0107A) return 'Non disponible';
         return this.propertyDetails.RLUEx.RL0107A;
+    }
+
+    // ===== SECTION 1 - IDENTIFICATION DE L'UNITÉ D'ÉVALUATION =====
+    
+    // Groupe Adresse (RL0101)
+    get rl0101Ax() {
+        if (!this.propertyDetails?.RLUEx?.RL0101?.RL0101x?.RL0101Ax) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0101.RL0101x.RL0101Ax;
+    }
+    
+    get rl0101Bx() {
+        if (!this.propertyDetails?.RLUEx?.RL0101?.RL0101x?.RL0101Bx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0101.RL0101x.RL0101Bx;
+    }
+    
+    get rl0101Cx() {
+        if (!this.propertyDetails?.RLUEx?.RL0101?.RL0101x?.RL0101Cx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0101.RL0101x.RL0101Cx;
+    }
+    
+    get rl0101Dx() {
+        if (!this.propertyDetails?.RLUEx?.RL0101?.RL0101x?.RL0101Dx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0101.RL0101x.RL0101Dx;
+    }
+    
+    get rl0101Ex() {
+        if (!this.propertyDetails?.RLUEx?.RL0101?.RL0101x?.RL0101Ex) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0101.RL0101x.RL0101Ex;
+    }
+    
+    get rl0101Fx() {
+        if (!this.propertyDetails?.RLUEx?.RL0101?.RL0101x?.RL0101Fx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0101.RL0101x.RL0101Fx;
+    }
+    
+    get rl0101Gx() {
+        if (!this.propertyDetails?.RLUEx?.RL0101?.RL0101x?.RL0101Gx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0101.RL0101x.RL0101Gx;
+    }
+    
+    get rl0101Hx() {
+        if (!this.propertyDetails?.RLUEx?.RL0101?.RL0101x?.RL0101Hx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0101.RL0101x.RL0101Hx;
+    }
+    
+    get rl0101Ix() {
+        if (!this.propertyDetails?.RLUEx?.RL0101?.RL0101x?.RL0101Ix) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0101.RL0101x.RL0101Ix;
+    }
+    
+    get rl0101Jx() {
+        if (!this.propertyDetails?.RLUEx?.RL0101?.RL0101x?.RL0101Jx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0101.RL0101x.RL0101Jx;
+    }
+    
+    // Groupe Arrondissement (RL0102)
+    get rl0102A() {
+        if (!this.propertyDetails?.RLUEx?.RL0102?.RL0102A) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0102.RL0102A;
+    }
+    
+    // Groupe Cadastre (RL0103)
+    get rl0103Ax() {
+        if (!this.propertyDetails?.RLUEx?.RL0103?.RL0103x?.RL0103Ax) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0103.RL0103x.RL0103Ax;
+    }
+    
+    get rl0103Bx() {
+        if (!this.propertyDetails?.RLUEx?.RL0103?.RL0103x?.RL0103Bx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0103.RL0103x.RL0103Bx;
+    }
+    
+    get rl0103Cx() {
+        if (!this.propertyDetails?.RLUEx?.RL0103?.RL0103x?.RL0103Cx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0103.RL0103x.RL0103Cx;
+    }
+    
+    get rl0103Dx() {
+        if (!this.propertyDetails?.RLUEx?.RL0103?.RL0103x?.RL0103Dx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0103.RL0103x.RL0103Dx;
+    }
+    
+    get rl0103Ex() {
+        if (!this.propertyDetails?.RLUEx?.RL0103?.RL0103x?.RL0103Ex) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0103.RL0103x.RL0103Ex;
+    }
+    
+    get rl0103Fx() {
+        if (!this.propertyDetails?.RLUEx?.RL0103?.RL0103x?.RL0103Fx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0103.RL0103x.RL0103Fx;
+    }
+    
+    // Groupe Matricule (RL0104)
+    get rl0104A() {
+        if (!this.propertyDetails?.RLUEx?.RL0104?.RL0104A) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0104.RL0104A;
+    }
+    
+    get rl0104B() {
+        if (!this.propertyDetails?.RLUEx?.RL0104?.RL0104B) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0104.RL0104B;
+    }
+    
+    get rl0104C() {
+        if (!this.propertyDetails?.RLUEx?.RL0104?.RL0104C) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0104.RL0104C;
+    }
+    
+    get rl0104D() {
+        if (!this.propertyDetails?.RLUEx?.RL0104?.RL0104D) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0104.RL0104D;
+    }
+    
+    get rl0104E() {
+        if (!this.propertyDetails?.RLUEx?.RL0104?.RL0104E) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0104.RL0104E;
+    }
+    
+    get rl0104F() {
+        if (!this.propertyDetails?.RLUEx?.RL0104?.RL0104F) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0104.RL0104F;
+    }
+    
+    get rl0104G() {
+        if (!this.propertyDetails?.RLUEx?.RL0104?.RL0104G) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0104.RL0104G;
+    }
+    
+    get rl0104H() {
+        if (!this.propertyDetails?.RLUEx?.RL0104?.RL0104H) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0104.RL0104H;
+    }
+    
+    // Groupe Codes (RL0105-RL0107)
+    get rl0105A() {
+        if (!this.propertyDetails?.RLUEx?.RL0105?.RL0105A) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0105.RL0105A;
+    }
+    
+    get rl0106A() {
+        if (!this.propertyDetails?.RLUEx?.RL0106?.RL0106A) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0106.RL0106A;
+    }
+    
+    get rl0107A() {
+        if (!this.propertyDetails?.RLUEx?.RL0107?.RL0107A) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0107.RL0107A;
+    }
+
+    // ===== SECTION 2 - IDENTIFICATION DU PROPRIÉTAIRE =====
+    
+    // Groupe Identité du propriétaire
+    get rl0201Ax() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Ax) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Ax;
+    }
+    
+    get rl0201Bx() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Bx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Bx;
+    }
+    
+    get rl0201Fx() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Fx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Fx;
+    }
+    
+    get rl0201Gx() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Gx) return 'Non disponible';
+        return this.formatDate(this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Gx);
+    }
+    
+    get rl0201Hx() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Hx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Hx;
+    }
+    
+    // Groupe Adresse postale principale
+    get rl0201Cx() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Cx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Cx;
+    }
+    
+    get rl0201Dx() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Dx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Dx;
+    }
+    
+    get rl0201Ex() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Ex) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Ex;
+    }
+    
+    get rl0201Qx() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Qx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Qx;
+    }
+    
+    get rl0201Rx() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Rx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Rx;
+    }
+    
+    // Groupe Adresse postale structurée
+    get rl0201Ix() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Ix) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Ix;
+    }
+    
+    get rl0201Jx() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Jx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Jx;
+    }
+    
+    get rl0201Kx() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Kx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Kx;
+    }
+    
+    get rl0201Lx() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Lx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Lx;
+    }
+    
+    get rl0201Mx() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Mx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Mx;
+    }
+    
+    get rl0201Nx() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Nx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Nx;
+    }
+    
+    get rl0201Ox() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Ox) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Ox;
+    }
+    
+    get rl0201Px() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Px) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Px;
+    }
+    
+    // Groupe Informations postales
+    get rl0201Sx() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Sx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Sx;
+    }
+    
+    get rl0201Tx() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201x?.RL0201Tx) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201x.RL0201Tx;
+    }
+    
+    // Groupe Code administratif
+    get rl0201U() {
+        if (!this.propertyDetails?.RLUEx?.RL0201?.RL0201U) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0201.RL0201U;
+    }
+
+    // ===== SECTION 3 - CARACTÉRISTIQUES DE L'UNITÉ D'ÉVALUATION =====
+    
+    // Groupe Caractéristiques du terrain
+    get rl0301A() {
+        if (!this.propertyDetails?.RLUEx?.RL0301A) return 'Non disponible';
+        return `${parseFloat(this.propertyDetails.RLUEx.RL0301A).toLocaleString('fr-CA')} m`;
+    }
+    
+    get rl0302A() {
+        if (!this.propertyDetails?.RLUEx?.RL0302A) return 'Non disponible';
+        return `${parseFloat(this.propertyDetails.RLUEx.RL0302A).toLocaleString('fr-CA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} m²`;
+    }
+    
+    get rl0303A() {
+        if (!this.propertyDetails?.RLUEx?.RL0303A) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0303A;
+    }
+    
+    get rl0304A() {
+        if (!this.propertyDetails?.RLUEx?.RL0304A) return 'Non disponible';
+        return `${parseFloat(this.propertyDetails.RLUEx.RL0304A).toLocaleString('fr-CA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} m²`;
+    }
+    
+    get rl0305A() {
+        if (!this.propertyDetails?.RLUEx?.RL0305A) return 'Non disponible';
+        return `${parseFloat(this.propertyDetails.RLUEx.RL0305A).toLocaleString('fr-CA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} m²`;
+    }
+    
+    get rl0314A() {
+        if (!this.propertyDetails?.RLUEx?.RL0314A) return 'Non disponible';
+        return `${parseFloat(this.propertyDetails.RLUEx.RL0314A).toLocaleString('fr-CA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} m²`;
+    }
+    
+    get rl0315A() {
+        if (!this.propertyDetails?.RLUEx?.RL0315A) return 'Non disponible';
+        return `${parseFloat(this.propertyDetails.RLUEx.RL0315A).toLocaleString('fr-CA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} m²`;
+    }
+    
+    get rl0316A() {
+        if (!this.propertyDetails?.RLUEx?.RL0316A) return 'Non disponible';
+        return `${parseFloat(this.propertyDetails.RLUEx.RL0316A).toLocaleString('fr-CA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} m²`;
+    }
+    
+    get rl0320A() {
+        if (!this.propertyDetails?.RLUEx?.RL0320A) return 'Non disponible';
+        return `${parseFloat(this.propertyDetails.RLUEx.RL0320A).toLocaleString('fr-CA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} m²`;
+    }
+    
+    // Groupe Caractéristiques du bâtiment principal
+    get rl0306A() {
+        if (!this.propertyDetails?.RLUEx?.RL0306A) return 'Non disponible';
+        return `${this.propertyDetails.RLUEx.RL0306A} étage(s)`;
+    }
+    
+    get rl0307A() {
+        if (!this.propertyDetails?.RLUEx?.RL0307A) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0307A;
+    }
+    
+    get rl0307B() {
+        if (!this.propertyDetails?.RLUEx?.RL0307B) return 'Non disponible';
+        const mentionMap = {
+            'R': 'Réelle',
+            'E': 'Estimée'
+        };
+        return mentionMap[this.propertyDetails.RLUEx.RL0307B] || this.propertyDetails.RLUEx.RL0307B;
+    }
+    
+    get rl0308A() {
+        if (!this.propertyDetails?.RLUEx?.RL0308A) return 'Non disponible';
+        return `${parseFloat(this.propertyDetails.RLUEx.RL0308A).toLocaleString('fr-CA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} m²`;
+    }
+    
+    get rl0309A() {
+        if (!this.propertyDetails?.RLUEx?.RL0309A) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0309A;
+    }
+    
+    get rl0310A() {
+        if (!this.propertyDetails?.RLUEx?.RL0310A) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0310A;
+    }
+    
+    // Groupe Informations d'occupation
+    get rl0311A() {
+        if (!this.propertyDetails?.RLUEx?.RL0311A) return 'Non disponible';
+        return `${this.propertyDetails.RLUEx.RL0311A} logement(s)`;
+    }
+    
+    get rl0312A() {
+        if (!this.propertyDetails?.RLUEx?.RL0312A) return 'Non disponible';
+        return `${this.propertyDetails.RLUEx.RL0312A} chambre(s)`;
+    }
+    
+    get rl0313A() {
+        if (!this.propertyDetails?.RLUEx?.RL0313A) return 'Non disponible';
+        return `${this.propertyDetails.RLUEx.RL0313A} local(aux)`;
+    }
+    
+    // Groupe Services municipaux
+    get rl0317A() {
+        if (!this.propertyDetails?.RLUEx?.RL0317A) return 'Non disponible';
+        return `${this.propertyDetails.RLUEx.RL0317A} raccordement(s)`;
+    }
+    
+    get rl0318A() {
+        if (!this.propertyDetails?.RLUEx?.RL0318A) return 'Non disponible';
+        return `${this.propertyDetails.RLUEx.RL0318A} raccordement(s)`;
+    }
+    
+    get rl0319A() {
+        if (!this.propertyDetails?.RLUEx?.RL0319A) return 'Non disponible';
+        return `${this.propertyDetails.RLUEx.RL0319A} raccordement(s)`;
+    }
+
+    // ===== SECTION 4 - VALEURS AU RÔLE D'ÉVALUATION =====
+    
+    // Groupe Information de référence
+    get rl0401A() {
+        if (!this.propertyDetails?.RLUEx?.RL0401A) return 'Non disponible';
+        return this.formatDate(this.propertyDetails.RLUEx.RL0401A);
+    }
+    
+    // Groupe Valeurs au rôle en vigueur
+    get rl0402A() {
+        if (!this.propertyDetails?.RLUEx?.RL0402A) return 'Non disponible';
+        return this.formatCurrency(this.propertyDetails.RLUEx.RL0402A);
+    }
+    
+    get rl0403A() {
+        if (!this.propertyDetails?.RLUEx?.RL0403A) return 'Non disponible';
+        return this.formatCurrency(this.propertyDetails.RLUEx.RL0403A);
+    }
+    
+    get rl0404A() {
+        if (!this.propertyDetails?.RLUEx?.RL0404A) return 'Non disponible';
+        return this.formatCurrency(this.propertyDetails.RLUEx.RL0404A);
+    }
+    
+    // Groupe Valeur comparative
+    get rl0405A() {
+        if (!this.propertyDetails?.RLUEx?.RL0405A) return 'Non disponible';
+        return this.formatCurrency(this.propertyDetails.RLUEx.RL0405A);
+    }
+
+    // ===== SECTION 5 - RÉPARTITION FISCALE =====
+    
+    // Groupe Catégories de base
+    get rl0501A() {
+        if (!this.propertyDetails?.RLUEx?.RL0501A) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0501A === '1' ? 'Oui' : 'Non';
+    }
+    
+    get rl0502A() {
+        if (!this.propertyDetails?.RLUEx?.RL0502A) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0502A;
+    }
+    
+    get rl0503A() {
+        if (!this.propertyDetails?.RLUEx?.RL0503A) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0503A;
+    }
+    
+    // Groupe Secteur
+    get rl0508A() {
+        if (!this.propertyDetails?.RLUEx?.RL0508A) return 'Non disponible';
+        return this.propertyDetails.RLUEx.RL0508A;
+    }
+    
+    // Groupe Sous-catégories non résidentielles (multiples)
+    get rl0506Ax() {
+        if (!this.propertyDetails?.RLUEx?.RL0506?.RL0506x) return [];
+        return this.propertyDetails.RLUEx.RL0506.RL0506x.map(item => ({
+            code: item.RL0506Ax || 'Non disponible',
+            proportion: item.RL0506Bx ? `${item.RL0506Bx}%` : 'Non disponible'
+        }));
+    }
+    
+    // Groupe Sous-catégories résidentielles (multiples)
+    get rl0509Ax() {
+        if (!this.propertyDetails?.RLUEx?.RL0509?.RL0509x) return [];
+        return this.propertyDetails.RLUEx.RL0509.RL0509x.map(item => ({
+            code: item.RL0509Ax || 'Non disponible',
+            proportion: item.RL0509Bx ? `${item.RL0509Bx}%` : 'Non disponible'
+        }));
+    }
+    
+    // Groupe Répartitions légales générales (multiples - max 16)
+    get rl0504Ax() {
+        if (!this.propertyDetails?.RLUEx?.RL0504?.RL0504x) return [];
+        return this.propertyDetails.RLUEx.RL0504.RL0504x.map(item => ({
+            loi: item.RL0504Ax || 'Non disponible',
+            article: item.RL0504Bx || 'Non disponible',
+            alinea: item.RL0504Cx || 'Non disponible',
+            montant: item.RL0504Dx ? this.formatCurrency(item.RL0504Dx) : 'Non disponible',
+            partie: item.RL0504Ex || 'Non disponible',
+            imposabilite: item.RL0504Fx || 'Non disponible'
+        }));
+    }
+    
+    // Groupe Répartitions EAE scolaires (multiples - max 12)
+    get rl0507Ax() {
+        if (!this.propertyDetails?.RLUEx?.RL0507?.RL0507x) return [];
+        return this.propertyDetails.RLUEx.RL0507.RL0507x.map(item => ({
+            loi: item.RL0507Ax || 'Non disponible',
+            article: item.RL0507Bx || 'Non disponible',
+            alinea: item.RL0507Cx || 'Non disponible',
+            montant: item.RL0507Dx ? this.formatCurrency(item.RL0507Dx) : 'Non disponible',
+            partie: item.RL0507Ex || 'Non disponible',
+            imposabilite: item.RL0507Fx || 'Non disponible'
+        }));
+    }
+
+    // ===== SECTIONS ANNEXABLES =====
+    
+    // ===== INFORMATIONS ANNEXABLES GLOBALES (RLZG) =====
+    
+    // Groupe Métadonnées globales
+    get rlzg0001() {
+        const value = this.getSecureValue(this.propertyDetails, 'RENSEIGNEMENTS_ANNEXABLES_GLOBAL.RLZG0001');
+        return value === 'Non disponible' ? 'Non disponible' : value;
+    }
+    
+    get rlzg0002() {
+        const value = this.getSecureValue(this.propertyDetails, 'RENSEIGNEMENTS_ANNEXABLES_GLOBAL.RLZG0002');
+        return value === 'Non disponible' ? 'Non disponible' : this.formatDate(value);
+    }
+    
+    // ===== INFORMATIONS ANNEXABLES UNITÉ (RLZU) =====
+    
+    // Groupe Identification unité (RLZU1007x)
+    get rlzu1007x() {
+        const array = this.getSecureArray(this.propertyDetails, 'RLUEx.RENSEIGNEMENTS_ANNEXABLES_UNITE.RLZU1007.RLZU1007x');
+        return array.map(item => ({
+            numero: item?.RLZU1007Ax || 'Non disponible',
+            code: item?.RLZU1007Bx || 'Non disponible'
+        }));
+    }
+    
+    // Groupe Superficie détaillée (RLZU1008x)
+    get rlzu1008x() {
+        const array = this.getSecureArray(this.propertyDetails, 'RLUEx.RENSEIGNEMENTS_ANNEXABLES_UNITE.RLZU1008.RLZU1008x');
+        return array.map(item => ({
+            identifiant: item?.RLZU1008Ax || 'Non disponible',
+            superficieTerrain: item?.RLZU1008Bx ? `${parseFloat(item.RLZU1008Bx).toLocaleString('fr-CA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} m²` : 'Non disponible',
+            superficieBatiment: item?.RLZU1008Cx ? `${parseFloat(item.RLZU1008Cx).toLocaleString('fr-CA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} m²` : 'Non disponible',
+            typePropriete: item?.RLZU1008Dx || 'Non disponible'
+        }));
+    }
+    
+    // Groupe Références cadastrales (RLZU2001x)
+    get rlzu2001x() {
+        const array = this.getSecureArray(this.propertyDetails, 'RLUEx.RENSEIGNEMENTS_ANNEXABLES_UNITE.RLZU2001.RLZU2001x');
+        return array.map(item => ({
+            numeroReference: item?.RLZU2001Ax || 'Non disponible',
+            codeCadastral: item?.RLZU2001Bx || 'Non disponible',
+            typeReference: item?.RLZU2001Ex || 'Non disponible',
+            statutCadastral: item?.RLZU2001Fx || 'Non disponible'
+        }));
+    }
+    
+    // Groupe Mesures techniques
+    get rlzu3001() {
+        const value = this.getSecureValue(this.propertyDetails, 'RLUEx.RENSEIGNEMENTS_ANNEXABLES_UNITE.RLZU3001');
+        return value === 'Non disponible' ? 'Non disponible' : `${parseFloat(value).toLocaleString('fr-CA', {minimumFractionDigits: 2, maximumFractionDigits: 2})} m`;
+    }
+    
+    // Groupe Classification (RLZU3xxx)
+    get rlzu3005A() {
+        const value = this.getSecureValue(this.propertyDetails, 'RLUEx.RENSEIGNEMENTS_ANNEXABLES_UNITE.RLZU3005A');
+        if (value === 'Non disponible') return 'Non disponible';
+        
+        const typeMap = {
+            'R': 'Résidentiel',
+            'C': 'Commercial',
+            'I': 'Industriel',
+            'A': 'Agricole'
+        };
+        return typeMap[value] || value;
+    }
+    
+    get rlzu3005B() {
+        return this.getSecureValue(this.propertyDetails, 'RLUEx.RENSEIGNEMENTS_ANNEXABLES_UNITE.RLZU3005B');
+    }
+    
+    get rlzu3005C() {
+        return this.getSecureValue(this.propertyDetails, 'RLUEx.RENSEIGNEMENTS_ANNEXABLES_UNITE.RLZU3005C');
+    }
+    
+    get rlzu3006B() {
+        return this.getSecureValue(this.propertyDetails, 'RLUEx.RENSEIGNEMENTS_ANNEXABLES_UNITE.RLZU3006B');
+    }
+    
+    get rlzu3007x() {
+        const array = this.getSecureArray(this.propertyDetails, 'RLUEx.RENSEIGNEMENTS_ANNEXABLES_UNITE.RLZU3007.RLZU3007x');
+        return array.map(item => ({
+            code: item?.RLZU3007x || 'Non disponible'
+        }));
+    }
+    
+    // Groupe Dates importantes (RLZU31xx)
+    get rlzu3101() {
+        const value = this.getSecureValue(this.propertyDetails, 'RLUEx.RENSEIGNEMENTS_ANNEXABLES_UNITE.RLZU3101');
+        return value === 'Non disponible' ? 'Non disponible' : this.formatDate(value);
+    }
+    
+    get rlzu3102() {
+        const value = this.getSecureValue(this.propertyDetails, 'RLUEx.RENSEIGNEMENTS_ANNEXABLES_UNITE.RLZU3102');
+        return value === 'Non disponible' ? 'Non disponible' : this.formatDate(value);
+    }
+    
+    get rlzu3103() {
+        const value = this.getSecureValue(this.propertyDetails, 'RLUEx.RENSEIGNEMENTS_ANNEXABLES_UNITE.RLZU3103');
+        return value === 'Non disponible' ? 'Non disponible' : this.formatDate(value);
+    }
+    
+    get rlzu3104() {
+        return this.getSecureValue(this.propertyDetails, 'RLUEx.RENSEIGNEMENTS_ANNEXABLES_UNITE.RLZU3104');
+    }
+    
+    // Groupe Valeurs financières (RLZU4xxx et RLZU5xxx)
+    get rlzu4001() {
+        const value = this.getSecureValue(this.propertyDetails, 'RLUEx.RENSEIGNEMENTS_ANNEXABLES_UNITE.RLZU4001');
+        return value === 'Non disponible' ? 'Non disponible' : this.formatCurrency(value);
+    }
+    
+    get rlzu4002() {
+        const value = this.getSecureValue(this.propertyDetails, 'RLUEx.RENSEIGNEMENTS_ANNEXABLES_UNITE.RLZU4002');
+        return value === 'Non disponible' ? 'Non disponible' : this.formatCurrency(value);
+    }
+    
+    get rlzu5001() {
+        const value = this.getSecureValue(this.propertyDetails, 'RLUEx.RENSEIGNEMENTS_ANNEXABLES_UNITE.RLZU5001');
+        return value === 'Non disponible' ? 'Non disponible' : `${parseFloat(value).toLocaleString('fr-CA', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%`;
     }
     
     /**
