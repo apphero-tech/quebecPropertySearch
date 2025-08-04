@@ -1,0 +1,166 @@
+<template>
+    <lightning-card title="Recherche de Propriétés" icon-name="standard:address">
+        <div class="slds-p-around_medium">
+            
+            <!-- Sélection de municipalité -->
+            <div class="slds-form-element slds-m-bottom_medium">
+                <label class="slds-form-element__label" for="municipality-select">
+                    <abbr class="slds-required" title="required">*</abbr>
+                    Municipalité
+                </label>
+                <div class="slds-form-element__control">
+                    <lightning-combobox
+                        id="municipality-select"
+                        name="municipality"
+                        label=""
+                        value={selectedMunicipality}
+                        placeholder="Sélectionner une municipalité"
+                        options={municipalityOptions}
+                        onchange={handleMunicipalityChange}
+                        disabled={isLoadingMunicipalities}>
+                    </lightning-combobox>
+                    
+                    <!-- Indicateur de chargement -->
+                    <template if:true={isLoadingMunicipalities}>
+                        <lightning-spinner alternative-text="Chargement des municipalités..." size="small"></lightning-spinner>
+                    </template>
+                </div>
+            </div>
+            
+            <!-- Recherche de rue -->
+            <div class="slds-form-element slds-m-bottom_medium">
+                <label class="slds-form-element__label" for="street-input">
+                    <abbr class="slds-required" title="required">*</abbr>
+                    Voie publique
+                </label>
+                <div class="slds-form-element__control">
+                    <div class="slds-input-has-icon slds-input-has-icon_right">
+                        <lightning-input
+                            id="street-input"
+                            type="text"
+                            label=""
+                            placeholder="Tapez le nom de la rue (ex: SAINT)"
+                            value={streetInput}
+                            onchange={handleStreetInput}
+                            class={streetInputClass}
+                            disabled={isLoadingStreets}>
+                        </lightning-input>
+                        
+                        <!-- Indicateur de chargement -->
+                        <template if:true={isLoadingStreets}>
+                            <lightning-spinner alternative-text="Recherche en cours..." size="small"></lightning-spinner>
+                        </template>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Suggestions de rues -->
+            <template if:true={showStreetSuggestions}>
+                <div class={streetSuggestionsClass}>
+                    <ul class="slds-dropdown slds-dropdown_length-with-icon-7 slds-dropdown_fluid">
+                        <template for:each={streetSuggestions} for:item="street">
+                            <li key={street} class="slds-dropdown__item">
+                                <a 
+                                    class="slds-dropdown__item-action slds-truncate" 
+                                    data-value={street}
+                                    onclick={handleStreetSelection}
+                                    title={street}>
+                                    <lightning-icon 
+                                        icon-name="standard:address" 
+                                        size="x-small" 
+                                        class="slds-m-right_x-small">
+                                    </lightning-icon>
+                                    {street}
+                                </a>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+            </template>
+            
+            <!-- Recherche de numéro -->
+            <div class="slds-form-element slds-m-bottom_medium">
+                <label class="slds-form-element__label" for="number-input">
+                    <abbr class="slds-required" title="required">*</abbr>
+                    Numéro civique
+                </label>
+                <div class="slds-form-element__control">
+                    <lightning-input
+                        id="number-input"
+                        type="text"
+                        label=""
+                        placeholder="Saisissez le numéro civique"
+                        value={numberInput}
+                        onchange={handleNumberInput}
+                        class={numberInputClass}
+                        disabled={isNumberDisabled}>
+                    </lightning-input>
+                </div>
+            </div>
+            
+            <!-- Bouton de recherche -->
+            <div class="slds-form-element slds-m-bottom_medium">
+                <lightning-button
+                    label="Rechercher"
+                    onclick={handleSearch}
+                    disabled={searchDisabled}
+                    variant="brand"
+                    class="slds-m-top_small">
+                </lightning-button>
+            </div>
+            
+            <!-- Rue sélectionnée -->
+            <template if:true={selectedStreet}>
+                <div class="slds-m-top_small">
+                    <lightning-badge label="Rue sélectionnée" variant="success"></lightning-badge>
+                    <span class="slds-m-left_small">{selectedStreet}</span>
+                </div>
+            </template>
+            
+            <!-- Zone de résultats -->
+            <div class="slds-m-top_medium">
+                
+                <!-- Loading -->
+                <template if:true={isLoadingProperty}>
+                    <div class="slds-text-align_center">
+                        <lightning-spinner size="small" alternative-text="Recherche de propriété en cours..."></lightning-spinner>
+                        <p>Recherche en cours...</p>
+                    </div>
+                </template>
+                
+                <!-- Propriété trouvée -->
+                <template if:true={showPropertyDetails}>
+                    <div class="slds-box slds-theme_default">
+                        <h3 class="slds-text-heading_small slds-m-bottom_small">
+                            📍 Propriété trouvée
+                        </h3>
+                        <div class="slds-grid slds-wrap">
+                            <div class="slds-col slds-size_1-of-2">
+                                <p><strong>Adresse :</strong> {propertyAddress}</p>
+                                <p if:true={propertyPostalCode}><strong>Code postal :</strong> {propertyPostalCode}</p>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2">
+                                <p if:true={propertyOwner}><strong>Propriétaire :</strong> {propertyOwner}</p>
+                                <p if:true={propertyValue}><strong>Valeur :</strong> {propertyValue}</p>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                
+                <!-- Aucun résultat -->
+                <template if:true={showNoResults}>
+                    <div class="slds-box slds-theme_warning">
+                        <h3 class="slds-text-heading_small">
+                            ❌ Aucun résultat
+                        </h3>
+                        <p>{noResultsMessage}</p>
+                    </div>
+                </template>
+                
+            </div>
+            
+
+            
+        </div>
+    </lightning-card>
+</template> 

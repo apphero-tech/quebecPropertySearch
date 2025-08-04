@@ -1,0 +1,95 @@
+.suggestions {
+    position: relative;
+    z-index: 1000;
+    pointer-events: auto;
+}
+
+.suggestions.visible {
+    display: block;
+}
+
+.suggestions.hidden {
+    display: none;
+}
+
+.suggestions ul {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #dddbda;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.1);
+    background: white;
+}
+
+.suggestions li {
+    border-bottom: 1px solid #f3f2f2;
+}
+
+.suggestions li:last-child {
+    border-bottom: none;
+}
+
+.suggestions a {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    color: #514f4d;
+    text-decoration: none;
+    transition: background-color 0.1s ease;
+}
+
+.suggestions a:hover {
+    background-color: #f3f2f2;
+    text-decoration: none;
+}
+
+.suggestions a:focus {
+    background-color: #0070d2;
+    color: white;
+    outline: none;
+}
+
+.loading {
+    background-color: #f3f2f2;
+}
+
+/* Améliorations pour l'interface */
+.slds-form-element {
+    margin-bottom: 1rem;
+}
+
+.slds-input-has-icon {
+    position: relative;
+}
+
+.slds-input-has-icon .slds-spinner {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Styles pour les badges de sélection */
+.slds-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Styles pour la section des résultats */
+.slds-box.slds-theme_shade {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+}
+
+.slds-text-color_success {
+    color: #04844b;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .slds-col.slds-size_1-of-2 {
+        width: 100%;
+        padding: 0;
+        margin-bottom: 0.5rem;
+    }
+} 
