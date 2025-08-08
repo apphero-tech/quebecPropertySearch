@@ -2,7 +2,6 @@ public with sharing class AddressSearchController {
     
     // Configuration API
     private static final String API_BASE_URL = 'https://nd6ev9abcc.execute-api.ca-central-1.amazonaws.com/api';
-    private static final String API_KEY = 'PcIRmLSCoH19AAfigHkpTeM66kL6dgO4B1L6htUa';
     private static final String COLLECTION = 'Kirkland';
     
     /**
@@ -18,7 +17,7 @@ public with sharing class AddressSearchController {
             System.debug('Municipality code: ' + municipalityCode);
             
             // ✅ SÉCURITÉ : Vérifier que cette clé API a accès à cette municipalité
-            if (municipalityCode != 'Kirkland') {
+            if (municipalityCode != 'Kirkland' && municipalityCode != '66102') {
                 System.debug('ACCÈS REFUSÉ : Cette clé API n\'a accès qu\'à la collection Kirkland');
                 return new List<String>();
             }
@@ -30,7 +29,7 @@ public with sharing class AddressSearchController {
             
             // Construction de l'URL
             String endpoint = API_BASE_URL + '/distinct-streets';
-            String queryParams = '?collection=' + EncodingUtil.urlEncode(municipalityCode, 'UTF-8') + '&address=' + EncodingUtil.urlEncode(searchTerm, 'UTF-8');
+            String queryParams = '?collection=Kirkland&address=' + EncodingUtil.urlEncode(searchTerm, 'UTF-8');
             String fullUrl = endpoint + queryParams;
             
             System.debug('Full URL: ' + fullUrl);
@@ -333,7 +332,7 @@ public with sharing class AddressSearchController {
             }
             
             // ✅ SÉCURITÉ : Vérifier que cette clé API a accès à cette municipalité
-            if (municipalityCode != 'Kirkland') {
+            if (municipalityCode != 'Kirkland' && municipalityCode != '66102') {
                 System.debug('ACCÈS REFUSÉ : Cette clé API n\'a accès qu\'à la collection Kirkland');
                 return new List<String>();
             }
@@ -343,7 +342,7 @@ public with sharing class AddressSearchController {
             
             // D'abord, vérifier que la rue existe avec /distinct-streets
             String distinctEndpoint = API_BASE_URL + '/distinct-streets';
-            String distinctParams = '?collection=' + EncodingUtil.urlEncode(municipalityCode, 'UTF-8') + '&address=' + EncodingUtil.urlEncode(cleanStreetName, 'UTF-8');
+            String distinctParams = '?collection=Kirkland&address=' + EncodingUtil.urlEncode(cleanStreetName, 'UTF-8');
             String distinctUrl = distinctEndpoint + distinctParams;
             
             System.debug('Checking if street exists: ' + distinctUrl);
@@ -460,7 +459,7 @@ public with sharing class AddressSearchController {
      * @return Réponse brute de l'API
      */
     @AuraEnabled
-    public static String testDirectAPI(String streetName) {
+    public static String testDirectAPI(String streetName, String apiKey) {
         try {
             System.debug('=== Test direct API pour: ' + streetName + ' ===');
             
@@ -470,7 +469,7 @@ public with sharing class AddressSearchController {
             HttpRequest req1 = new HttpRequest();
             req1.setEndpoint(distinctEndpoint);
             req1.setMethod('GET');
-            req1.setHeader('x-api-key', API_KEY);
+            req1.setHeader('x-api-key', apiKey);
             req1.setTimeout(10000);
             
             Http http = new Http();
@@ -494,7 +493,7 @@ public with sharing class AddressSearchController {
                 HttpRequest req2 = new HttpRequest();
                 req2.setEndpoint(searchEndpoint);
                 req2.setMethod('GET');
-                req2.setHeader('x-api-key', API_KEY);
+                req2.setHeader('x-api-key', apiKey);
                 req2.setTimeout(10000);
                 
                 HttpResponse res2 = http.send(req2);
@@ -526,7 +525,7 @@ public with sharing class AddressSearchController {
             System.debug('Number is blank: ' + String.isBlank(streetNumber));
             
             // ✅ SÉCURITÉ : Vérifier que cette clé API a accès à cette municipalité
-            if (municipalityCode != 'Kirkland') {
+            if (municipalityCode != 'Kirkland' && municipalityCode != '66102') {
                 System.debug('ACCÈS REFUSÉ : Cette clé API n\'a accès qu\'à la collection Kirkland');
                 return null;
             }
@@ -545,7 +544,7 @@ public with sharing class AddressSearchController {
             
             // ✅ ÉTAPE 1 : Recherche pour obtenir l'ID du document
             String searchEndpoint = API_BASE_URL + '/search-full-address';
-            String searchParams = '?collection=' + EncodingUtil.urlEncode(municipalityCode, 'UTF-8') + '&address=' + EncodingUtil.urlEncode(cleanStreetName, 'UTF-8') + '&doorNumber=' + EncodingUtil.urlEncode(streetNumber, 'UTF-8');
+            String searchParams = '?collection=Kirkland&address=' + EncodingUtil.urlEncode(cleanStreetName, 'UTF-8') + '&doorNumber=' + EncodingUtil.urlEncode(streetNumber, 'UTF-8');
             String searchUrl = searchEndpoint + searchParams;
             
             System.debug('Search URL: ' + searchUrl);
@@ -579,7 +578,7 @@ public with sharing class AddressSearchController {
             
             // ✅ ÉTAPE 3 : Récupérer le document complet avec l'ID
             String documentEndpoint = API_BASE_URL + '/document/' + documentId;
-            String documentParams = '?collection=' + EncodingUtil.urlEncode(municipalityCode, 'UTF-8');
+            String documentParams = '?collection=Kirkland';
             String documentUrl = documentEndpoint + documentParams;
             
             System.debug('Document URL: ' + documentUrl);

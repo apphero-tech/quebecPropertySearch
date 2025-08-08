@@ -1,0 +1,314 @@
+/* ===== CORRECTION ALIGNEMENT DROPDOWN ===== */
+
+/* Container du champ avec position relative */
+.street-input-container {
+    position: relative;
+    width: 100%;
+}
+
+/* Liste des suggestions parfaitement alignée */
+.street-suggestions {
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9999 !important;
+    
+    /* Style de la liste */
+    background: white;
+    border: 1px solid #dddbda;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 2px;
+    
+    /* Assurer l'alignement parfait */
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+/* Chaque option de la liste */
+.street-option {
+    padding: 0.75rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f2f2;
+    transition: background-color 0.1s ease;
+    display: flex;
+    align-items: center;
+}
+
+.street-option:hover {
+    background-color: #f3f2f2;
+}
+
+.street-option:last-child {
+    border-bottom: none;
+}
+
+/* Responsive - mobile */
+@media (max-width: 768px) {
+    .street-suggestions {
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+    }
+}
+
+/* Styles pour les suggestions de rues (ancien système) */
+.suggestions {
+    position: relative;
+    z-index: 1000;
+}
+
+
+
+.suggestions.visible {
+    display: block;
+}
+
+.suggestions.hidden {
+    display: none;
+}
+
+.suggestions .slds-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1001;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #dddbda;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.suggestions .slds-dropdown__item {
+    cursor: pointer;
+}
+
+.suggestions .slds-dropdown__item:hover {
+    background-color: #f3f2f2;
+}
+
+.suggestions .slds-dropdown__item-action {
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: #3e3e3c;
+}
+
+.suggestions .slds-dropdown__item-action:hover {
+    text-decoration: none;
+    color: #3e3e3c;
+}
+
+/* Styles pour les sections de propriétés */
+.property-details-accordion {
+    margin-top: 1rem;
+}
+
+.property-details-accordion .slds-accordion__section {
+    margin-bottom: 0.5rem;
+}
+
+.property-details-accordion .slds-box {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+}
+
+.property-details-accordion h4 {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.property-details-accordion p {
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+}
+
+.property-details-accordion strong {
+    color: #495057;
+    font-weight: 600;
+}
+
+/* Styles pour les boutons de type de recherche */
+.slds-button-group {
+    margin-bottom: 1.5rem;
+}
+
+.slds-button-group .slds-button {
+    min-width: 120px;
+}
+
+/* Styles pour les formulaires */
+.slds-form {
+    background-color: #ffffff;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    border: 1px solid #dddbda;
+    margin-bottom: 1rem;
+}
+
+.slds-form-element {
+    margin-bottom: 1rem;
+}
+
+.slds-form-element__label {
+    font-weight: 600;
+    color: #3e3e3c;
+}
+
+/* Styles pour les cartes de propriétés */
+.property-card {
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 0.25rem;
+}
+
+.property-card .slds-card__header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.property-card .slds-card__header-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* Styles pour les badges */
+.slds-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Styles pour les spinners */
+.slds-spinner {
+    margin: 0.5rem 0;
+}
+
+/* Styles pour les messages d'erreur */
+.slds-theme_warning {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+}
+
+.slds-theme_warning h3 {
+    color: #856404;
+    font-weight: 600;
+}
+
+/* Styles pour les grilles */
+.slds-grid {
+    margin-bottom: 0.5rem;
+}
+
+.slds-col {
+    padding: 0.25rem;
+}
+
+/* Styles pour les tableaux dans les sections */
+.slds-table {
+    font-size: 0.875rem;
+}
+
+.slds-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+}
+
+.slds-table td {
+    vertical-align: middle;
+}
+
+/* Styles pour les icônes */
+.slds-icon {
+    margin-right: 0.5rem;
+}
+
+/* Styles pour les animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.property-card {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Styles pour la responsivité */
+@media (max-width: 768px) {
+    .slds-button-group .slds-button {
+        min-width: 100px;
+        font-size: 0.875rem;
+    }
+    
+    .slds-grid {
+        flex-direction: column;
+    }
+    
+    .slds-col {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .suggestions .slds-dropdown {
+        max-height: 150px;
+    }
+}
+
+/* Styles pour les états de chargement */
+.loading-state {
+    text-align: center;
+    padding: 2rem;
+    color: #706e6b;
+}
+
+.loading-state p {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Styles pour les états vides */
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #706e6b;
+}
+
+.empty-state h3 {
+    margin-bottom: 0.5rem;
+    color: #706e6b;
+}
+
+/* Styles pour les tooltips */
+.slds-tooltip {
+    font-size: 0.75rem;
+}
+
+/* Styles pour les focus */
+.slds-input:focus,
+.slds-combobox__input:focus {
+    border-color: #0070d2;
+    box-shadow: 0 0 3px #0070d2;
+}
+
+/* Styles pour les états désactivés */
+.slds-input:disabled,
+.slds-combobox__input:disabled {
+    background-color: #f3f2f2;
+    color: #706e6b;
+    cursor: not-allowed;
+}
