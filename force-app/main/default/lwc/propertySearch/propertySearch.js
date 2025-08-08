@@ -482,7 +482,7 @@ export default class PropertySearch extends LightningElement {
                 rl0201Rx: this.getSecureValue(rl0201x, 'RL0201Rx'), // Pays
                 
                 // Informations supplémentaires propriétaire
-                rl0201U: this.getSecureValue(rl0201, 'RL0201U'), // Nombre d'unités
+                rl0201U: this.getSecureValue(rl0201, 'RL0201U'), // Code des conditions d'inscription
                 
                 // === SECTION 3 : CARACTÉRISTIQUES DE L'UNITÉ D'ÉVALUATION ===
                 
@@ -581,6 +581,77 @@ export default class PropertySearch extends LightningElement {
             };
             
             console.log('Formatted property:', property);
+
+            // === TRAITEMENT PROPRIÉTAIRES MULTIPLES (RL0201x peut être objet ou tableau) ===
+            try {
+                const proprietaireData = rluex?.RL0201?.RL0201x;
+                const proprietaires = Array.isArray(proprietaireData)
+                    ? proprietaireData
+                    : (proprietaireData ? [proprietaireData] : []);
+
+                const processedOwners = proprietaires
+                    .map((prop, index) => {
+                        if (!prop) return null;
+
+                        const nom = prop.RL0201Ax || 'Non disponible';
+                        const prenom = prop.RL0201Bx || '';
+                        const statutCode = prop.RL0201Hx;
+                        const dateInscription = prop.RL0201Gx || '';
+
+                        return {
+                            id: `owner_${index + 1}`,
+                            fullName: prenom ? `${prenom} ${nom}` : nom,
+                            lastName: nom,
+                            firstName: prenom,
+                            statutCode: statutCode,
+                            status: statutCode === '1' ? 'Personne physique' : 'Personne morale',
+
+                            // Adresse complète (codes MEFQ)
+                            adressePostale: prop.RL0201Cx || '',
+                            numeroCivique: prop.RL0201Ix || '',
+                            fractionAdresse: prop.RL0201Jx || '',
+                            codeGenerique: prop.RL0201Kx || '',
+                            codeLien: prop.RL0201Lx || '',
+                            voiePublique: prop.RL0201Mx || '',
+                            pointCardinal: prop.RL0201Nx || '',
+                            numeroAppartement: prop.RL0201Ox || '',
+                            fractionAppartement: prop.RL0201Px || '',
+
+                            // Géographie
+                            municipalite: prop.RL0201Dx || '',
+                            codePostal: prop.RL0201Ex || '',
+                            province: prop.RL0201Qx || '',
+                            pays: prop.RL0201Rx || '',
+
+                            // Postal spécialisé
+                            casePostale: prop.RL0201Sx || '',
+                            succursalePostale: prop.RL0201Tx || '',
+
+                            // Dates et complément
+                            dateInscription: dateInscription,
+                            complementAdresse: prop.RL0201Fx || ''
+                        };
+                    })
+                    .filter(Boolean);
+
+                property.owners = processedOwners;
+                property.hasMultipleOwners = processedOwners.length > 1;
+                property.hasTwoOwners = processedOwners.length === 2;
+
+                const conditionInscription = rluex?.RL0201?.RL0201U || '';
+                property.conditionInscription = conditionInscription;
+                property.hasSpecialCondition = Boolean(conditionInscription && conditionInscription !== '1');
+                // Pour l'instant, afficher le code tel quel; mappage descriptif possible ultérieurement
+                property.conditionInscriptionText = conditionInscription;
+            } catch (e) {
+                // Ne pas bloquer l'affichage si un format inattendu est rencontré
+                property.owners = [];
+                property.hasMultipleOwners = false;
+                property.hasTwoOwners = false;
+                property.conditionInscription = this.getSecureValue(rl0201, 'RL0201U');
+                property.hasSpecialCondition = false;
+                property.conditionInscriptionText = property.conditionInscription;
+            }
             
             // Afficher la propriété
             this.properties = [property];

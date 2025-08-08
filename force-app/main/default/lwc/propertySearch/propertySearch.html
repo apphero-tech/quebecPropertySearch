@@ -334,27 +334,136 @@
                                     <lightning-accordion-section name="section2" label="👤 Section 2 : Identification du propriétaire">
                                         <div class="slds-p-around_medium">
                                             
-                                            <!-- Groupe Identité du propriétaire (RL0201x) -->
+                                            <!-- Groupe Identité du propriétaire (RL0201x) - prise en charge multiples -->
                                             <div class="slds-box slds-m-bottom_medium">
                                                 <h4 class="slds-text-heading_small slds-m-bottom_small">👤 Groupe Identité du propriétaire (RL0201x)</h4>
                                                 <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Nom légal du propriétaire :</strong> {property.rl0201Ax}</p>
-                                                        <p><strong>Prénom du propriétaire :</strong> {property.rl0201Bx}</p>
-                                                        <p><strong>Adresse postale non structurée :</strong> {property.rl0201Cx}</p>
-                                                        <p><strong>Municipalité :</strong> {property.rl0201Dx}</p>
-                                                        <p><strong>Code postal :</strong> {property.rl0201Ex}</p>
-                                                        <p><strong>Complément d'adresse/contact :</strong> {property.rl0201Fx}</p>
-                                                    </div>
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Date initiale d'inscription :</strong> {property.rl0201Gx}</p>
-                                                        <p><strong>Statut imposition scolaire :</strong> {property.rl0201Hx}</p>
-                                                        <p><strong>Numéro civique postal :</strong> {property.rl0201Ix}</p>
-                                                        <p><strong>Type voie postal :</strong> {property.rl0201Kx}</p>
-                                                        <p><strong>Nom voie postal :</strong> {property.rl0201Mx}</p>
-                                                        <p><strong>Province/état :</strong> {property.rl0201Qx}</p>
-                                                        <p><strong>Pays :</strong> {property.rl0201Rx}</p>
-                                                    </div>
+                                                    <!-- Cas exactement 2 propriétaires: utiliser les 2 colonnes de la grille principale -->
+                                                    <template if:true={property.owners}>
+                                                        <template if:true={property.hasTwoOwners}>
+                                                            <template for:each={property.owners} for:item="owner">
+                                                                <div key={owner.id} class="slds-col slds-size_1-of-2">
+                                                                    <p class="slds-text-body_regular slds-m-bottom_x-small">
+                                                                        <strong>{owner.fullName}</strong>
+                                                                    </p>
+                                                                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">
+                                                                        {owner.status}
+                                                                    </p>
+
+                                                                    <!-- Afficher adresse complète si disponible -->
+                                                                    <template if:true={owner.adressePostale}>
+                                                                        <p class="slds-text-body_small slds-m-bottom_x-small">{owner.adressePostale}</p>
+                                                                    </template>
+                                                                    <template if:false={owner.adressePostale}>
+                                                                        <template if:true={owner.numeroCivique}>
+                                                                            <p class="slds-text-body_small slds-m-bottom_x-small">
+                                                                                {owner.numeroCivique} {owner.voiePublique}
+                                                                                <template if:true={owner.codeGenerique}> ({owner.codeGenerique})</template>
+                                                                            </p>
+                                                                        </template>
+                                                                    </template>
+
+                                                                    <template if:true={owner.municipalite}>
+                                                                        <p class="slds-text-body_small slds-m-bottom_x-small">
+                                                                            {owner.municipalite}
+                                                                            <template if:true={owner.codePostal}> {owner.codePostal}</template>
+                                                                        </p>
+                                                                    </template>
+
+                                                                    <template if:true={owner.province}>
+                                                                        <p class="slds-text-body_small slds-m-bottom_x-small">{owner.province}</p>
+                                                                    </template>
+
+                                                                    <!-- Case postale si présente -->
+                                                                    <template if:true={owner.casePostale}>
+                                                                        <p class="slds-text-body_small slds-m-bottom_x-small">
+                                                                            C.P. {owner.casePostale}
+                                                                            <template if:true={owner.succursalePostale}> Succ. {owner.succursalePostale}</template>
+                                                                        </p>
+                                                                    </template>
+
+                                                                    <template if:true={owner.dateInscription}>
+                                                                        <p class="slds-text-body_small slds-text-color_weak">
+                                                                            Inscrit depuis : {owner.dateInscription}
+                                                                        </p>
+                                                                    </template>
+                                                                </div>
+                                                            </template>
+                                                        </template>
+
+                                                        <!-- Cas 1 propriétaire ou 3+ propriétaires: colonne gauche avec liste verticale, colonne droite pour condition -->
+                                                        <template if:false={property.hasTwoOwners}>
+                                                            <div class="slds-col slds-size_1-of-2">
+                                                                <h4 class="slds-text-heading_small slds-m-bottom_x-small">
+                                                                    <template if:true={property.hasMultipleOwners}>Propriétaires</template>
+                                                                    <template if:false={property.hasMultipleOwners}>Propriétaire</template>
+                                                                </h4>
+
+                                                                <template for:each={property.owners} for:item="owner">
+                                                                    <div key={owner.id} class="slds-m-bottom_small">
+                                                                        <p class="slds-text-body_regular">
+                                                                            <strong>{owner.fullName}</strong>
+                                                                        </p>
+                                                                        <p class="slds-text-body_small slds-text-color_weak">
+                                                                            {owner.status}
+                                                                        </p>
+
+                                                                        <!-- Afficher adresse complète si disponible -->
+                                                                        <template if:true={owner.adressePostale}>
+                                                                            <p class="slds-text-body_small">{owner.adressePostale}</p>
+                                                                        </template>
+                                                                        <template if:false={owner.adressePostale}>
+                                                                            <template if:true={owner.numeroCivique}>
+                                                                                <p class="slds-text-body_small">
+                                                                                    {owner.numeroCivique} {owner.voiePublique}
+                                                                                    <template if:true={owner.codeGenerique}> ({owner.codeGenerique})</template>
+                                                                                </p>
+                                                                            </template>
+                                                                        </template>
+
+                                                                        <template if:true={owner.municipalite}>
+                                                                            <p class="slds-text-body_small">
+                                                                                {owner.municipalite}
+                                                                                <template if:true={owner.codePostal}> {owner.codePostal}</template>
+                                                                            </p>
+                                                                        </template>
+
+                                                                        <template if:true={owner.province}>
+                                                                            <p class="slds-text-body_small">{owner.province}</p>
+                                                                        </template>
+
+                                                                        <!-- Case postale si présente -->
+                                                                        <template if:true={owner.casePostale}>
+                                                                            <p class="slds-text-body_small">
+                                                                                C.P. {owner.casePostale}
+                                                                                <template if:true={owner.succursalePostale}> Succ. {owner.succursalePostale}</template>
+                                                                            </p>
+                                                                        </template>
+
+                                                                        <template if:true={owner.dateInscription}>
+                                                                            <p class="slds-text-body_small slds-text-color_weak">
+                                                                                Inscrit depuis : {owner.dateInscription}
+                                                                            </p>
+                                                                        </template>
+                                                                    </div>
+                                                                </template>
+
+                                                                <template if:false={property.owners}>
+                                                                    <p class="slds-text-body_regular slds-text-color_weak">
+                                                                        Informations du propriétaire non disponibles
+                                                                    </p>
+                                                                </template>
+                                                            </div>
+
+                                                            <div class="slds-col slds-size_1-of-2">
+                                                                <template if:true={property.hasSpecialCondition}>
+                                                                    <p class="slds-text-body_small slds-text-color_weak">
+                                                                        Condition particulière : {property.conditionInscriptionText}
+                                                                    </p>
+                                                                </template>
+                                                            </div>
+                                                        </template>
+                                                    </template>
                                                 </div>
                                             </div>
                                             
@@ -363,7 +472,7 @@
                                                 <h4 class="slds-text-heading_small slds-m-bottom_small">📊 Informations supplémentaires propriétaire</h4>
                                                 <div class="slds-grid slds-wrap slds-gutters">
                                                     <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Nombre d'unités :</strong> {property.rl0201U}</p>
+                                                        <p><strong>Condition d'inscription :</strong> {property.conditionInscription}</p>
                                                     </div>
                                                 </div>
                                             </div>
