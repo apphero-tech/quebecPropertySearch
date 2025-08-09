@@ -56,55 +56,7 @@
     }
 }
 
-/* Styles pour les suggestions de rues (ancien système) */
-.suggestions {
-    position: relative;
-    z-index: 1000;
-}
-
-
-
-.suggestions.visible {
-    display: block;
-}
-
-.suggestions.hidden {
-    display: none;
-}
-
-.suggestions .slds-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    z-index: 1001;
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid #dddbda;
-    border-radius: 0.25rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.suggestions .slds-dropdown__item {
-    cursor: pointer;
-}
-
-.suggestions .slds-dropdown__item:hover {
-    background-color: #f3f2f2;
-}
-
-.suggestions .slds-dropdown__item-action {
-    padding: 0.5rem 0.75rem;
-    display: flex;
-    align-items: center;
-    text-decoration: none;
-    color: #3e3e3c;
-}
-
-.suggestions .slds-dropdown__item-action:hover {
-    text-decoration: none;
-    color: #3e3e3c;
-}
+/* Removed obsolete .suggestions dropdown styles (legacy, unused) */
 
 /* Styles pour les sections de propriétés */
 .property-details-accordion {
@@ -311,4 +263,10 @@
     background-color: #f3f2f2;
     color: #706e6b;
     cursor: not-allowed;
+}
+
+/* Champ explicitement grisé (lecture seule logique) */
+.disabled-input input {
+    background-color: #f3f3f3 !important;
+    cursor: not-allowed !important;
 }

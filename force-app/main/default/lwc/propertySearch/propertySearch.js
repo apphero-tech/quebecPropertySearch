@@ -6,6 +6,8 @@ import { FlowAttributeChangeEvent } from 'lightning/flowSupport';
 import getAvailableCollections from '@salesforce/apex/AddressSearchController.getAvailableCollections';
 import getStreetSuggestions from '@salesforce/apex/AddressSearchController.getStreetSuggestions';
 import getPropertyDetails from '@salesforce/apex/AddressSearchController.getPropertyDetails';
+import searchByOwner from '@salesforce/apex/AddressSearchController.searchByOwner';
+import searchOwnerSuggestions from '@salesforce/apex/AddressSearchController.searchOwnerSuggestions';
 
 export default class PropertySearch extends LightningElement {
     
@@ -28,7 +30,8 @@ export default class PropertySearch extends LightningElement {
     @track streetInput = '';
     @track selectedStreet = '';
     @track numberInput = '';
-    @track ownerInput = '';
+    // Formulaire propriétaire simplifié
+    @track ownerForm = { name: '' };
     @track matriculeInput = '';
     @track lotInput = '';
     
@@ -40,6 +43,11 @@ export default class PropertySearch extends LightningElement {
     @track showNoResults = false;
     @track noResultsMessage = '';
     @track properties = [];
+    // Suggestions propriétaire (pattern identique rue)
+    @track showOwnerSuggestions = false;
+    @track ownerSuggestions = [];
+    @track isOwnerLoading = false;
+    @track isMouseOverOwnerDropdown = false;
     
     // États de chargement
     @track isLoadingMunicipalities = false;
@@ -48,11 +56,16 @@ export default class PropertySearch extends LightningElement {
     
     // Timers pour debouncing
     streetSearchTimeout;
+    // Timer suggestions propriétaire
+    ownerSearchTimeout;
     
     connectedCallback() {
         // Initialiser la municipalité sélectionnée avec la valeur par défaut
         this.selectedMunicipality = this.defaultMunicipality;
         this.loadMunicipalities();
+        // Owner UI init
+        this.showOwnerSuggestions = false;
+        this.ownerSuggestions = [];
     }
     
     /**
@@ -219,7 +232,8 @@ export default class PropertySearch extends LightningElement {
         
         // Format Canada Poste
         const line1 = `${civicNumber} ${fullStreetType} ${streetName}`.trim();
-        const line2 = `Kirkland QC ${postalCode}`;
+        const municipality = this.selectedMunicipality || this.defaultMunicipality || 'Kirkland';
+        const line2 = `${municipality} QC ${postalCode}`;
         
         return {
             fullAddress: `${line1}, ${line2}`,
@@ -289,8 +303,106 @@ export default class PropertySearch extends LightningElement {
         this.numberInput = event.target.value;
     }
     
-    handleOwnerInput(event) {
-        this.ownerInput = event.target.value;
+    // ======= RECHERCHE PROPRIÉTAIRE - LOGIQUE SIMPLIFIÉE =======
+    handleOwnerNameChange(event) {
+        const value = event.detail.value || '';
+        console.log('=== OWNER NAME CHANGE ===');
+        console.log('Nom saisi:', value);
+        this.ownerForm = { ...this.ownerForm, name: value };
+        this.validateOwnerSearchForm();
+        clearTimeout(this.ownerSearchTimeout);
+        const trigger = value && value.trim().length >= 2;
+        console.log('Longueur:', value.length, 'Doit déclencher suggestions:', trigger);
+        if (trigger) {
+            this.ownerSearchTimeout = setTimeout(() => this.searchOwnerSuggestions(), 300);
+        } else {
+            this.hideOwnerSuggestions();
+        }
+    }
+
+    async searchOwnerSuggestions() {
+        try {
+            console.log('=== DEBUG OWNER SUGGESTIONS ===');
+            console.log('Nom saisi:', this.ownerForm.name);
+            this.isOwnerLoading = true;
+            this.showOwnerSuggestions = false;
+            const result = await searchOwnerSuggestions({
+                ownerName: this.ownerForm.name,
+                municipalityCode: '66102',
+                apiKey: this.apiKey
+            });
+            console.log('Suggestions API result:', result);
+            if (Array.isArray(result) && result.length > 0) {
+                this.ownerSuggestions = result.map((s) => ({
+                    id: s.id || s.value,
+                    value: s.value,
+                    display: s.display || s.value
+                }));
+                this.showOwnerSuggestions = true;
+            } else {
+                this.ownerSuggestions = [];
+                this.showOwnerSuggestions = false;
+            }
+        } catch (e) {
+            console.error('Erreur suggestions propriétaire:', e);
+            // silencieux pour suggestions
+            this.ownerSuggestions = [];
+            this.showOwnerSuggestions = false;
+        } finally {
+            this.isOwnerLoading = false;
+        }
+    }
+
+    handleOwnerFocus() {
+        if ((this.ownerForm?.name || '').length >= 2) {
+            this.searchOwnerSuggestions();
+        }
+    }
+
+    handleOwnerBlur() {
+        // identical pattern to street: allow dropdown to stay if mouse over
+        setTimeout(() => {
+            if (!this.isMouseOverOwnerDropdown) {
+                this.hideOwnerSuggestions();
+            }
+        }, 150);
+    }
+
+    handleOwnerDropdownMouseEnter() {
+        this.isMouseOverOwnerDropdown = true;
+    }
+
+    handleOwnerDropdownMouseLeave() {
+        this.isMouseOverOwnerDropdown = false;
+    }
+
+    handleOwnerSelection(event) {
+        const rawValue = event.currentTarget?.dataset?.ownername;
+        const display = event.currentTarget?.dataset?.ownerdisplay || rawValue;
+        if (!rawValue) return;
+        // Parse format "LAST, FIRST" if present for final search
+        let lastName = rawValue;
+        let firstName = '';
+        if (display && display.includes(', ')) {
+            const parts = display.split(', ');
+            if (parts.length >= 2) {
+                lastName = parts[0];
+                firstName = parts[1];
+            }
+        }
+        this.ownerForm = { ...this.ownerForm, name: display, lastName, firstName };
+        this.hideOwnerSuggestions();
+        this.validateOwnerSearchForm();
+    }
+
+    hideOwnerSuggestions() {
+        this.showOwnerSuggestions = false;
+        this.ownerSuggestions = [];
+    }
+
+    validateOwnerSearchForm() {
+        const hasName = (this.ownerForm?.name || '').trim().length >= 2;
+        this.isOwnerSearchDisabled = !hasName;
     }
     
     handleMatriculeInput(event) {
@@ -318,7 +430,7 @@ export default class PropertySearch extends LightningElement {
             case 'address':
                 return this.selectedStreet && this.numberInput.trim();
             case 'owner':
-                return this.ownerInput.trim();
+                return (this.ownerForm?.name || '').trim().length >= 2;
             case 'matricule':
                 return this.matriculeInput.trim();
             case 'lot':
@@ -334,6 +446,8 @@ export default class PropertySearch extends LightningElement {
     get searchDisabled() {
         return !this.canSearch || this.isLoadingProperty;
     }
+
+    // Removed unused getter isFirstNameDisabled (no corresponding field in template)
     
     /**
      * Exécution de la recherche
@@ -354,12 +468,42 @@ export default class PropertySearch extends LightningElement {
                     municipalityCode: '66102',
                     apiKey: this.apiKey
                 });
+            } else if (this.searchType === 'owner') {
+                const ownerName = (this.ownerForm?.name || '').trim();
+                if (!ownerName) {
+                    this.isLoadingProperty = false;
+                    return;
+                }
+                // If selection captured a structured last/first, pass them; else pass only last_name=ownerName
+                const lastName = (this.ownerForm?.lastName || '').trim();
+                const firstName = (this.ownerForm?.firstName || '').trim();
+                const listResult = await searchByOwner({
+                    name: lastName || ownerName,
+                    firstName: firstName || '',
+                    ownerType: null,
+                    municipalityCode: '66102',
+                    apiKey: this.apiKey
+                });
+
+                if (Array.isArray(listResult) && listResult.length > 0) {
+                    const mapped = listResult
+                        .map(doc => this.formatPropertyFromMongo(doc))
+                        .filter(Boolean);
+                    this.properties = mapped;
+                    this.showPropertyDetails = true;
+                    this.showNoResults = false;
+                } else {
+                    this.properties = [];
+                    this.showPropertyDetails = false;
+                    this.showNoResults = true;
+                    this.noResultsMessage = 'Aucune propriété trouvée pour ce propriétaire.';
+                }
+                return;
             } else {
-                // TODO: Créer des méthodes Apex spécifiques pour chaque type de recherche
+                // Autres types non encore implémentés
                 console.log('Autres types de recherche non encore implémentés');
                 this.showNoResults = true;
                 this.noResultsMessage = 'Ce type de recherche sera bientôt disponible';
-                // ✅ Réinitialiser les champs même pour les types non implémentés
                 this.resetAllSearchFields();
                 return;
             }
@@ -386,14 +530,20 @@ export default class PropertySearch extends LightningElement {
             }
             
         } catch (error) {
-            console.error('Search error:', error);
+            if (this.searchType === 'owner') {
+                console.error('Search owner error:', (error && (error.body && error.body.message)) ? error.body.message : error);
+            } else {
+                console.error('Search error:', error);
+            }
             this.showToast('Erreur', 'Erreur lors de la recherche', 'error');
             this.showPropertyDetails = false;
             this.showNoResults = true;
             this.noResultsMessage = 'Erreur lors de la recherche';
             
-            // ✅ En cas d'erreur aussi, garder la rue
-            this.resetNumberFieldOnly();
+            // ✅ Ne pas toucher aux champs de la recherche propriétaire
+            if (this.searchType !== 'owner') {
+                this.resetNumberFieldOnly();
+            }
         } finally {
             this.isLoadingProperty = false;
         }
@@ -849,7 +999,7 @@ export default class PropertySearch extends LightningElement {
         this.streetInput = '';
         this.selectedStreet = '';
         this.numberInput = '';
-        this.ownerInput = '';
+        this.ownerForm = { name: '', firstName: '', lastName: '' };
         this.matriculeInput = '';
         this.lotInput = '';
         this.isNumberDisabled = true;

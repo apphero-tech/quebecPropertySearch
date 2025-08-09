@@ -2,7 +2,26 @@ public with sharing class AddressSearchController {
     
     // Configuration API
     private static final String API_BASE_URL = 'https://nd6ev9abcc.execute-api.ca-central-1.amazonaws.com/api';
-    private static final String COLLECTION = 'Kirkland';
+    
+    /**
+     * Convertit un code municipalité en nom de collection utilisé par l'API
+     * Retourne null si non supporté
+     */
+    private static String getCollectionName(String municipalityCode) {
+        if (String.isBlank(municipalityCode)) {
+            return null;
+        }
+        Map<String, String> codeToCollection = new Map<String, String>{
+            '66102' => 'Kirkland',
+            '66023' => 'Montreal',
+            '23027' => 'Quebec'
+        };
+        // Si le code est déjà un nom de collection supporté, le retourner tel quel
+        if (codeToCollection.values().contains(municipalityCode)) {
+            return municipalityCode;
+        }
+        return codeToCollection.get(municipalityCode);
+    }
     
     /**
      * Recherche des suggestions de rues basées sur un terme de recherche
@@ -16,20 +35,21 @@ public with sharing class AddressSearchController {
             System.debug('Search term: ' + searchTerm);
             System.debug('Municipality code: ' + municipalityCode);
             
-            // ✅ SÉCURITÉ : Vérifier que cette clé API a accès à cette municipalité
-            if (municipalityCode != 'Kirkland' && municipalityCode != '66102') {
-                System.debug('ACCÈS REFUSÉ : Cette clé API n\'a accès qu\'à la collection Kirkland');
-                return new List<String>();
-            }
-            
             if (String.isBlank(searchTerm) || searchTerm.length() < 2) {
                 System.debug('Search term too short, returning empty list');
                 return new List<String>();
             }
             
+            // Déterminer la collection à partir du code municipalité
+            String collectionName = getCollectionName(municipalityCode);
+            if (String.isBlank(collectionName)) {
+                System.debug('Unsupported municipality: ' + municipalityCode);
+                return new List<String>();
+            }
+            
             // Construction de l'URL
             String endpoint = API_BASE_URL + '/distinct-streets';
-            String queryParams = '?collection=Kirkland&address=' + EncodingUtil.urlEncode(searchTerm, 'UTF-8');
+            String queryParams = '?collection=' + EncodingUtil.urlEncode(collectionName, 'UTF-8') + '&address=' + EncodingUtil.urlEncode(searchTerm, 'UTF-8');
             String fullUrl = endpoint + queryParams;
             
             System.debug('Full URL: ' + fullUrl);
@@ -229,12 +249,11 @@ public with sharing class AddressSearchController {
             // Parsing de la réponse JSON
             List<String> allCollections = parseCollectionsInfo(res.getBody());
             
-            // ✅ SÉCURITÉ : Cette clé API a accès uniquement à Kirkland
+            // Filtrer éventuellement ici selon la clé API (conservé à Kirkland par défaut)
             List<String> authorizedCollections = new List<String>();
             for (String collection : allCollections) {
                 if (collection == 'Kirkland') {
                     authorizedCollections.add(collection);
-                    break;
                 }
             }
             
@@ -313,202 +332,19 @@ public with sharing class AddressSearchController {
      * @param apiKey La clé API
      * @return Liste des numéros disponibles
      */
-    @AuraEnabled(cacheable=true)
-    public static List<String> getStreetNumbers(String streetName, String municipalityCode, String apiKey) {
-        try {
-            System.debug('=== AddressSearchController.getStreetNumbers START ===');
-            System.debug('Original street name: ' + streetName);
-            
-            if (String.isBlank(streetName)) {
-                System.debug('Street name is blank, returning empty list');
-                return new List<String>();
-            }
-            
-            // ✅ Correction : Nettoyer le nom de rue en supprimant "(boulevard)"
-            String cleanStreetName = streetName;
-            if (streetName.contains('(')) {
-                cleanStreetName = streetName.split('\\(')[0].trim();
-                System.debug('Cleaned street name: ' + cleanStreetName);
-            }
-            
-            // ✅ SÉCURITÉ : Vérifier que cette clé API a accès à cette municipalité
-            if (municipalityCode != 'Kirkland' && municipalityCode != '66102') {
-                System.debug('ACCÈS REFUSÉ : Cette clé API n\'a accès qu\'à la collection Kirkland');
-                return new List<String>();
-            }
-            
-            // ✅ STRATÉGIE HYBRIDE AMÉLIORÉE : Gamme plus large pour récupérer plus de numéros
-            List<String> numbers = new List<String>();
-            
-            // D'abord, vérifier que la rue existe avec /distinct-streets
-            String distinctEndpoint = API_BASE_URL + '/distinct-streets';
-            String distinctParams = '?collection=Kirkland&address=' + EncodingUtil.urlEncode(cleanStreetName, 'UTF-8');
-            String distinctUrl = distinctEndpoint + distinctParams;
-            
-            System.debug('Checking if street exists: ' + distinctUrl);
-            
-            HttpRequest req1 = new HttpRequest();
-            req1.setEndpoint(distinctUrl);
-            req1.setMethod('GET');
-            req1.setHeader('x-api-key', apiKey);
-            req1.setTimeout(10000);
-            
-            Http http = new Http();
-            HttpResponse res1 = http.send(req1);
-            
-            if (res1.getStatusCode() == 200) {
-                System.debug('✅ Street exists, now testing expanded number ranges...');
-                
-                // ✅ GAMME ÉLARGIE : Tester plus de numéros pour récupérer plus de résultats
-                List<String> testNumbers = new List<String>();
-                
-                // Pour HYMUS : gamme beaucoup plus large autour de 17200
-                if (cleanStreetName.equalsIgnoreCase('HYMUS')) {
-                    // Gamme élargie : 17100 à 17300 (200 numéros)
-                    for (Integer i = 17100; i <= 17300; i++) {
-                        testNumbers.add(String.valueOf(i));
-                    }
-                }
-                
-                // Pour SAINT-CHARLES : gamme élargie
-                if (cleanStreetName.equalsIgnoreCase('SAINT-CHARLES')) {
-                    // Gamme élargie : 2700 à 3100 (400 numéros)
-                    for (Integer i = 2700; i <= 3100; i++) {
-                        testNumbers.add(String.valueOf(i));
-                    }
-                }
-                
-                // Pour les autres rues : gamme générique plus large
-                if (testNumbers.isEmpty()) {
-                    // Gamme générique : 1 à 9999 (tous les 10 numéros)
-                    for (Integer i = 1; i <= 9999; i++) {
-                        if (Math.mod(i, 10) == 0) { // Tous les 10 numéros pour éviter trop d'appels
-                            testNumbers.add(String.valueOf(i));
-                        }
-                    }
-                }
-                
-                System.debug('Testing ' + testNumbers.size() + ' numbers for ' + cleanStreetName);
-                
-                Set<String> foundNumbers = new Set<String>();
-                Integer calloutCount = 0;
-                Integer maxCallouts = 50; // Limite pour éviter les timeouts
-                
-                for (String testNumber : testNumbers) {
-                    if (calloutCount >= maxCallouts) {
-                        System.debug('Reached max callouts limit (' + maxCallouts + '), stopping');
-                        break;
-                    }
-                    
-                    try {
-                        String searchEndpoint = API_BASE_URL + '/search-full-address';
-                        String searchParams = '?collection=' + COLLECTION + 
-                                           '&address=' + EncodingUtil.urlEncode(cleanStreetName, 'UTF-8') +
-                                           '&doorNumber=' + testNumber;
-                        String searchUrl = searchEndpoint + searchParams;
-                        
-                        HttpRequest req2 = new HttpRequest();
-                        req2.setEndpoint(searchUrl);
-                        req2.setMethod('GET');
-                        req2.setHeader('x-api-key', apiKey);
-                        req2.setTimeout(5000);
-                        
-                        HttpResponse res2 = http.send(req2);
-                        calloutCount++;
-                        
-                        if (res2.getStatusCode() == 200) {
-                            String responseBody = res2.getBody();
-                            if (responseBody != null && responseBody.contains('RLUEx')) {
-                                System.debug('✅ Number ' + testNumber + ' exists for ' + cleanStreetName);
-                                foundNumbers.add(testNumber);
-                            }
-                        }
-                        
-                    } catch (Exception e) {
-                        // Continue avec le prochain numéro
-                    }
-                }
-                
-                System.debug('CRITICAL: Total unique numbers found: ' + foundNumbers.size());
-                System.debug('All found numbers: ' + foundNumbers);
-                System.debug('Callouts made: ' + calloutCount);
-                
-                numbers = new List<String>(foundNumbers);
-                numbers.sort();
-                
-            } else {
-                System.debug('❌ Street does not exist: ' + res1.getStatusCode() + ' - ' + res1.getBody());
-            }
-            
-            System.debug('Final numbers: ' + numbers);
-            System.debug('Final numbers count: ' + numbers.size());
-            System.debug('=== AddressSearchController.getStreetNumbers END ===');
-            
-            return numbers;
-            
-        } catch (Exception e) {
-            System.debug('Exception in getStreetNumbers: ' + e.getMessage());
-            System.debug('Stack trace: ' + e.getStackTraceString());
-            return new List<String>();
-        }
-    }
+    // Removed getStreetNumbers (unused, expensive callout loop)
     
     /**
      * Test direct de l'API pour vérifier les données MongoDB réelles
      * @param streetName Le nom de la rue à tester
      * @return Réponse brute de l'API
      */
-    @AuraEnabled
-    public static String testDirectAPI(String streetName, String apiKey) {
-        try {
-            System.debug('=== Test direct API pour: ' + streetName + ' ===');
-            
-            // Test 1: /distinct-streets
-            String distinctEndpoint = API_BASE_URL + '/distinct-streets?collection=' + COLLECTION + '&address=' + EncodingUtil.urlEncode(streetName, 'UTF-8');
-            
-            HttpRequest req1 = new HttpRequest();
-            req1.setEndpoint(distinctEndpoint);
-            req1.setMethod('GET');
-            req1.setHeader('x-api-key', apiKey);
-            req1.setTimeout(10000);
-            
-            Http http = new Http();
-            HttpResponse res1 = http.send(req1);
-            
-            String result = '=== TEST API DIRECT ===\n';
-            result += 'Rue testée: ' + streetName + '\n\n';
-            result += '1. /distinct-streets:\n';
-            result += 'Status: ' + res1.getStatusCode() + '\n';
-            result += 'Response: ' + res1.getBody() + '\n\n';
-            
-            // Test 2: /search-full-address avec quelques numéros
-            result += '2. /search-full-address tests:\n';
-            
-            List<String> testNumbers = new List<String>{'1', '2755', '17200'};
-            for (String num : testNumbers) {
-                String searchEndpoint = API_BASE_URL + '/search-full-address?collection=' + COLLECTION + 
-                                      '&address=' + EncodingUtil.urlEncode(streetName, 'UTF-8') + 
-                                      '&doorNumber=' + num;
-                
-                HttpRequest req2 = new HttpRequest();
-                req2.setEndpoint(searchEndpoint);
-                req2.setMethod('GET');
-                req2.setHeader('x-api-key', apiKey);
-                req2.setTimeout(10000);
-                
-                HttpResponse res2 = http.send(req2);
-                
-                result += 'Numéro ' + num + ':\n';
-                result += 'Status: ' + res2.getStatusCode() + '\n';
-                result += 'Response: ' + res2.getBody() + '\n\n';
-            }
-            
-            return result;
-            
-        } catch (Exception e) {
-            return 'Erreur: ' + e.getMessage() + '\n' + e.getStackTraceString();
-        }
-    }
+    // Removed testDirectAPI (debug-only, not used by LWC)
+
+    /**
+     * Test direct de l'endpoint distinct-owner pour debug
+     */
+    // Removed testOwnerEndpoint (debug-only, not used by LWC)
     
     /**
      * Recherche des détails complets d'une propriété
@@ -524,9 +360,10 @@ public with sharing class AddressSearchController {
             System.debug('Street is blank: ' + String.isBlank(streetName));
             System.debug('Number is blank: ' + String.isBlank(streetNumber));
             
-            // ✅ SÉCURITÉ : Vérifier que cette clé API a accès à cette municipalité
-            if (municipalityCode != 'Kirkland' && municipalityCode != '66102') {
-                System.debug('ACCÈS REFUSÉ : Cette clé API n\'a accès qu\'à la collection Kirkland');
+            // Déterminer la collection à partir du code municipalité
+            String collectionName = getCollectionName(municipalityCode);
+            if (String.isBlank(collectionName)) {
+                System.debug('Unsupported municipality: ' + municipalityCode);
                 return null;
             }
             
@@ -544,7 +381,7 @@ public with sharing class AddressSearchController {
             
             // ✅ ÉTAPE 1 : Recherche pour obtenir l'ID du document
             String searchEndpoint = API_BASE_URL + '/search-full-address';
-            String searchParams = '?collection=Kirkland&address=' + EncodingUtil.urlEncode(cleanStreetName, 'UTF-8') + '&doorNumber=' + EncodingUtil.urlEncode(streetNumber, 'UTF-8');
+            String searchParams = '?collection=' + EncodingUtil.urlEncode(collectionName, 'UTF-8') + '&address=' + EncodingUtil.urlEncode(cleanStreetName, 'UTF-8') + '&doorNumber=' + EncodingUtil.urlEncode(streetNumber, 'UTF-8');
             String searchUrl = searchEndpoint + searchParams;
             
             System.debug('Search URL: ' + searchUrl);
@@ -578,7 +415,7 @@ public with sharing class AddressSearchController {
             
             // ✅ ÉTAPE 3 : Récupérer le document complet avec l'ID
             String documentEndpoint = API_BASE_URL + '/document/' + documentId;
-            String documentParams = '?collection=Kirkland';
+            String documentParams = '?collection=' + EncodingUtil.urlEncode(collectionName, 'UTF-8');
             String documentUrl = documentEndpoint + documentParams;
             
             System.debug('Document URL: ' + documentUrl);
@@ -613,6 +450,334 @@ public with sharing class AddressSearchController {
             System.debug('Stack trace: ' + e.getStackTraceString());
             return null;
         }
+    }
+
+    /**
+     * Recherche de propriétés par propriétaire (personne physique ou morale)
+     * @param name Nom de famille (physique) ou nom d'entreprise (morale)
+     * @param firstName Prénom (optionnel pour personne physique)
+     * @param ownerType 'physical' ou 'moral' (peut être null → heuristique côté client)
+     * @param municipalityCode Code municipalité (autorisé: 'Kirkland' ou '66102')
+     * @param apiKey Clé API
+     * @return Liste de documents MongoDB correspondant à la recherche
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Object> searchByOwner(String name, String firstName, String ownerType, String municipalityCode, String apiKey) {
+        List<Object> documents = new List<Object>();
+        try {
+            System.debug('=== SEARCH BY OWNER DEBUG ===');
+            System.debug('Input lastName (name): ' + name);
+            System.debug('Input firstName: ' + firstName);
+            System.debug('Municipality: ' + municipalityCode);
+            System.debug('=== AddressSearchController.searchByOwner START ===');
+            System.debug('Params - name: ' + name + ', firstName: ' + firstName + ', ownerType: ' + ownerType + ', municipalityCode: ' + municipalityCode);
+
+            // Déterminer la collection à partir du code municipalité
+            String collectionName = getCollectionName(municipalityCode);
+            if (String.isBlank(collectionName)) {
+                System.debug('Unsupported municipality: ' + municipalityCode);
+                return documents;
+            }
+
+            if (String.isBlank(name)) {
+                return documents;
+            }
+
+            // Base URL (contract confirmé: last_name / first_name)
+            String endpoint = API_BASE_URL + '/search-owner';
+
+            // Construire les URLs selon la stratégie validée
+            List<Object> result;
+            String baseParams = '?collection=' + EncodingUtil.urlEncode(collectionName, 'UTF-8');
+
+            // Contrat API: always use last_name (uppercase) and optional first_name (uppercase)
+            String ln = String.isBlank(name) ? '' : name.toUpperCase();
+            String fn = String.isBlank(firstName) ? '' : firstName.toUpperCase();
+            String url = endpoint + baseParams + '&last_name=' + EncodingUtil.urlEncode(ln, 'UTF-8');
+            if (String.isNotBlank(fn)) {
+                url += '&first_name=' + EncodingUtil.urlEncode(fn, 'UTF-8');
+            }
+            System.debug('Endpoint URL: ' + url);
+            result = performOwnerRequest(url, apiKey);
+            if (!result.isEmpty()) {
+                System.debug('API returned ' + result.size() + ' items');
+                return result;
+            }
+            // As a permissive fallback, retry last_name only if first_name was provided and got no result
+            if (String.isNotBlank(fn)) {
+                String url2 = endpoint + baseParams + '&last_name=' + EncodingUtil.urlEncode(ln, 'UTF-8');
+                System.debug('Fallback URL (last_name only): ' + url2);
+                result = performOwnerRequest(url2, apiKey);
+                if (!result.isEmpty()) {
+                    return result;
+                }
+            }
+
+            System.debug('No owner results found with provided parameters');
+            return documents;
+
+        } catch (Exception e) {
+            System.debug('Exception in searchByOwner: ' + e.getMessage());
+            System.debug('Stack trace: ' + e.getStackTraceString());
+            return documents;
+        }
+    }
+
+    /**
+     * Parsing tolérant de la réponse owner search
+     */
+    private static List<Object> parseOwnerSearchResponse(String jsonResponse) {
+        List<Object> documents = new List<Object>();
+        try {
+            if (String.isBlank(jsonResponse)) {
+                return documents;
+            }
+            Object jsonObj = JSON.deserializeUntyped(jsonResponse);
+            if (jsonObj instanceof List<Object>) {
+                documents = (List<Object>) jsonObj;
+            } else if (jsonObj instanceof Map<String, Object>) {
+                Map<String, Object> jsonMap = (Map<String, Object>) jsonObj;
+                // Ignorer si message d'erreur
+                Object error = jsonMap.get('error');
+                if (error == null) {
+                    documents.add(jsonMap);
+                }
+            }
+        } catch (Exception e) {
+            System.debug('Exception in parseOwnerSearchResponse: ' + e.getMessage());
+        }
+        return documents;
+    }
+
+    /**
+     * Exécuter une requête GET et parser la réponse pour la recherche propriétaire
+     */
+    private static List<Object> performOwnerRequest(String url, String apiKey) {
+        try {
+            HttpRequest req = new HttpRequest();
+            req.setEndpoint(url);
+            req.setMethod('GET');
+            req.setHeader('x-api-key', apiKey);
+            req.setHeader('Content-Type', 'application/json');
+            req.setTimeout(30000);
+            Http http = new Http();
+            HttpResponse res = http.send(req);
+            System.debug('Owner search URL: ' + url);
+            System.debug('Owner search status: ' + res.getStatusCode());
+            System.debug('Owner search body: ' + res.getBody());
+            if (res.getStatusCode() != 200) {
+                return new List<Object>();
+            }
+            return parseOwnerSearchResponse(res.getBody());
+        } catch (Exception e) {
+            System.debug('Exception in performOwnerRequest: ' + e.getMessage());
+            return new List<Object>();
+        }
+    }
+
+    /**
+     * Suggestions de propriétaires (un seul champ Nom) – retourne une liste d'objets {id, value, display}
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Object> searchOwnerSuggestions(String ownerName, String municipalityCode, String apiKey) {
+        List<Object> suggestions = new List<Object>();
+        try {
+            System.debug('=== OWNER SUGGESTIONS DEBUG START ===');
+            System.debug('Original ownerName: ' + ownerName);
+            System.debug('Municipality: ' + municipalityCode);
+            System.debug('API key (masked): len=' + (apiKey == null ? 0 : apiKey.length()) + ', last4=' + (apiKey == null || apiKey.length() < 4 ? 'NA' : apiKey.substring(apiKey.length()-4)));
+            if (String.isBlank(ownerName) || ownerName.length() < 2) {
+                System.debug('Owner name too short, returning empty suggestions');
+                System.debug('=== OWNER SUGGESTIONS DEBUG END ===');
+                return suggestions;
+            }
+            // Déterminer la collection à partir du code municipalité
+            String collectionName = getCollectionName(municipalityCode);
+            if (String.isBlank(collectionName)) {
+                System.debug('Unsupported municipality: ' + municipalityCode);
+                System.debug('=== OWNER SUGGESTIONS DEBUG END ===');
+                return suggestions;
+            }
+
+            // Nouvel endpoint: search-distinct-owner (retourne { owners: [...] })
+            String endpoint = API_BASE_URL + '/search-distinct-owner';
+            String upper = ownerName == null ? '' : ownerName.trim().toUpperCase();
+            String params = '?collection=' + EncodingUtil.urlEncode(collectionName, 'UTF-8') +
+                            '&last_name=' + EncodingUtil.urlEncode(upper, 'UTF-8');
+            String url = endpoint + params;
+
+            HttpRequest req = new HttpRequest();
+            req.setEndpoint(url);
+            req.setMethod('GET');
+            req.setHeader('x-api-key', apiKey);
+            req.setHeader('Content-Type', 'application/json');
+            req.setTimeout(20000);
+
+            Http http = new Http();
+            HttpResponse res = http.send(req);
+            System.debug('Endpoint URL: ' + url);
+            System.debug('API call status: ' + res.getStatusCode());
+            System.debug('Raw response body: ' + res.getBody());
+            if (res.getStatusCode() != 200) {
+                System.debug('Non-200 status for owner suggestions, returning empty');
+                System.debug('=== OWNER SUGGESTIONS DEBUG END ===');
+                return suggestions;
+            }
+
+            // Primary parse: { owners: [ { RL0201Ax, RL0201Bx }, ... ] }
+            Object jsonObj = JSON.deserializeUntyped(res.getBody());
+            if (jsonObj instanceof Map<String, Object>) {
+                Map<String, Object> mapResp = (Map<String, Object>) jsonObj;
+                System.debug('Parsed response keys: ' + mapResp.keySet());
+                Object ownersObj = mapResp.get('owners');
+                if (ownersObj instanceof List<Object>) {
+                    List<Object> owners = (List<Object>) ownersObj;
+                    System.debug('Owners array size: ' + owners.size());
+                    if (!owners.isEmpty()) {
+                        System.debug('First owner (preview): ' + owners[0]);
+                    }
+                    List<Object> fromDistinct = buildOwnerSuggestionsFromDistinctOwners(owners);
+                    if (!fromDistinct.isEmpty()) {
+                        System.debug('Final suggestions size (distinct): ' + fromDistinct.size());
+                        System.debug('=== OWNER SUGGESTIONS DEBUG END ===');
+                        return fromDistinct;
+                    }
+                }
+                System.debug('Response does not contain owners key or empty owners; will try fallback');
+            }
+
+            // Fallback: ancienne forme (tableau de documents MongoDB)
+            List<Object> docs = new List<Object>();
+            if (jsonObj instanceof List<Object>) {
+                docs = (List<Object>) jsonObj;
+            }
+
+            // Si résultat vide et saisie courte (2 caractères), fan-out sur A..Z sur le nouvel endpoint
+            if ((docs == null || docs.isEmpty()) && upper.length() == 2) {
+                List<Object> unionOwners = new List<Object>();
+                String alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                for (Integer i = 0; i < alphabet.length(); i++) { // 'A'..'Z'
+                    String ch = alphabet.substring(i, i+1);
+                    String tryUrl = endpoint + '?collection=' + EncodingUtil.urlEncode(collectionName, 'UTF-8') +
+                                    '&last_name=' + EncodingUtil.urlEncode(upper + ch, 'UTF-8');
+
+                    try {
+                        HttpRequest req2 = new HttpRequest();
+                        req2.setEndpoint(tryUrl);
+                        req2.setMethod('GET');
+                        req2.setHeader('x-api-key', apiKey);
+                        req2.setHeader('Content-Type', 'application/json');
+                        req2.setTimeout(10000);
+                        HttpResponse res2 = http.send(req2);
+                        if (res2.getStatusCode() == 200) {
+                            Object obj2 = JSON.deserializeUntyped(res2.getBody());
+                            if (obj2 instanceof Map<String, Object>) {
+                                Map<String, Object> map2 = (Map<String, Object>) obj2;
+                                Object owners2 = map2.get('owners');
+                                if (owners2 instanceof List<Object>) {
+                                    unionOwners.addAll((List<Object>) owners2);
+                                }
+                            }
+                        }
+                    } catch (Exception ignore) {
+                        // continuer
+                    }
+
+                    if (unionOwners.size() >= 50) { // limite raisonnable
+                        break;
+                    }
+                }
+                if (!unionOwners.isEmpty()) {
+                    List<Object> distinctUnion = buildOwnerSuggestionsFromDistinctOwners(unionOwners);
+                    System.debug('Final suggestions size (distinct fan-out): ' + distinctUnion.size());
+                    System.debug('=== OWNER SUGGESTIONS DEBUG END ===');
+                    return distinctUnion;
+                }
+            }
+
+            List<Object> fallbackSuggestions = buildOwnerSuggestionsFromDocuments(docs);
+            System.debug('Final suggestions size (fallback docs): ' + fallbackSuggestions.size());
+            System.debug('=== OWNER SUGGESTIONS DEBUG END ===');
+            return fallbackSuggestions;
+        } catch (Exception e) {
+            System.debug('Exception in searchOwnerSuggestions: ' + e.getMessage());
+            System.debug('=== OWNER SUGGESTIONS DEBUG END ===');
+            return suggestions;
+        }
+    }
+
+    // Construit des suggestions à partir d'une liste de documents MongoDB
+    private static List<Object> buildOwnerSuggestionsFromDocuments(List<Object> docs) {
+        List<Object> suggestions = new List<Object>();
+        Set<String> seen = new Set<String>();
+        Integer idx = 0;
+        for (Object d : docs) {
+            if (!(d instanceof Map<String, Object>)) continue;
+            Map<String, Object> doc = (Map<String, Object>) d;
+            Object rluexObj = doc.get('RLUEx');
+            if (!(rluexObj instanceof Map<String, Object>)) continue;
+            Map<String, Object> rluex = (Map<String, Object>) rluexObj;
+            Object rl0201Obj = rluex.get('RL0201');
+            if (!(rl0201Obj instanceof Map<String, Object>)) continue;
+            Map<String, Object> rl0201 = (Map<String, Object>) rl0201Obj;
+            Object rl0201xObj = rl0201.get('RL0201x');
+            if (rl0201xObj instanceof Map<String, Object>) {
+                addOwnerSuggestionFromOwnerMap((Map<String, Object>) rl0201xObj, seen, suggestions, idx);
+                idx++;
+            } else if (rl0201xObj instanceof List<Object>) {
+                for (Object o : (List<Object>) rl0201xObj) {
+                    if (o instanceof Map<String, Object>) {
+                        addOwnerSuggestionFromOwnerMap((Map<String, Object>) o, seen, suggestions, idx);
+                        idx++;
+                    }
+                }
+            }
+        }
+        return suggestions;
+    }
+
+    private static void addOwnerSuggestionFromOwnerMap(Map<String, Object> owner, Set<String> seen, List<Object> out, Integer idx) {
+        String nomLegal = (String) owner.get('RL0201Ax');
+        String prenom = (String) owner.get('RL0201Bx');
+        String statut = (String) owner.get('RL0201Hx');
+        if (String.isBlank(nomLegal)) return;
+        String key = (prenom != null ? prenom : '') + '|' + nomLegal + '|' + (statut != null ? statut : '');
+        if (seen.contains(key)) return;
+        seen.add(key);
+        String display = ('1' == statut && String.isNotBlank(prenom)) ? (nomLegal + ', ' + prenom) : nomLegal;
+        Map<String, Object> suggestion = new Map<String, Object>();
+        suggestion.put('id', String.valueOf(idx));
+        suggestion.put('value', nomLegal);
+        suggestion.put('display', display);
+        out.add(suggestion);
+    }
+
+    // Construit des suggestions à partir du format distinct-owner: [{RL0201Ax, RL0201Bx}]
+    private static List<Object> buildOwnerSuggestionsFromDistinctOwners(List<Object> owners) {
+        List<Object> suggestions = new List<Object>();
+        if (owners == null || owners.isEmpty()) {
+            return suggestions;
+        }
+        Set<String> seen = new Set<String>();
+        Integer idx = 0;
+        for (Object o : owners) {
+            if (!(o instanceof Map<String, Object>)) continue;
+            Map<String, Object> owner = (Map<String, Object>) o;
+            String nomLegal = (String) owner.get('RL0201Ax');
+            String prenom = (String) owner.get('RL0201Bx');
+            if (String.isBlank(nomLegal)) continue;
+            String key = (prenom != null ? prenom : '') + '|' + nomLegal;
+            if (seen.contains(key)) continue;
+            seen.add(key);
+            String display = String.isNotBlank(prenom) ? (nomLegal + ', ' + prenom) : nomLegal;
+            Map<String, Object> suggestion = new Map<String, Object>();
+            suggestion.put('id', String.valueOf(idx));
+            suggestion.put('value', nomLegal);
+            suggestion.put('display', display);
+            suggestions.add(suggestion);
+            idx++;
+        }
+        return suggestions;
     }
     
     /**

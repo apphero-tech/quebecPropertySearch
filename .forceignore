@@ -1,3 +1,11 @@
 **/jsconfig.json
 
 **/.eslintrc.json
+
+# Ignore test files and folders from source operations
+**/__tests__/**
+**/*.test.js
+**/*.spec.js
+**/*.test.ts
+**/*.spec.ts
+**/*.map

@@ -1,15 +1,11 @@
 {
     "orgName": "Quebec Property Search Scratch Org",
     "edition": "Developer",
-    "features": [
-        "Communities"
-    ],
+    "features": [],
     "settings": {
         "lightningExperienceSettings": {
             "enableS1DesktopEnabled": true
         },
-        "communitiesSettings": {
-            "enableNetworksEnabled": true
-        }
+        "communitiesSettings": null
     }
 } 

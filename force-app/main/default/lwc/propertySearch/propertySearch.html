@@ -127,22 +127,69 @@
             <!-- Formulaire de recherche par propriétaire -->
             <template if:true={isOwnerSearch}>
                 <div class="slds-form">
-                    <div class="slds-form-element slds-m-bottom_medium">
-                        <label class="slds-form-element__label" for="owner-input">
-                            <abbr class="slds-required" title="required">*</abbr>
-                            Nom du propriétaire
-                        </label>
+                    <!-- Municipalité (affichage en lecture seule pour cohérence) -->
+                    <div class="slds-form-element slds-m-bottom_small">
+                        <label class="slds-form-element__label">Municipalité</label>
                         <div class="slds-form-element__control">
                             <lightning-input
-                                id="owner-input"
                                 type="text"
-                                label=""
-                                placeholder="Entrez le nom du propriétaire"
-                                value={ownerInput}
-                                onchange={handleOwnerInput}>
+                                value={selectedMunicipality}
+                                disabled
+                                class="disabled-input">
                             </lightning-input>
                         </div>
                     </div>
+
+                    <!-- Champ Nom avec suggestions - structure IDENTIQUE au champ Rue -->
+                    <div class="slds-form-element slds-m-bottom_medium">
+                        <label class="slds-form-element__label" for="owner-input">
+                            <abbr class="slds-required" title="required">*</abbr>
+                            Nom
+                        </label>
+                        <div class="slds-form-element__control">
+                            <div class="street-input-container">
+                                <lightning-input
+                                    id="owner-input"
+                                    type="text"
+                                    label=""
+                                    placeholder="Taper ou coller le nom complet du propriétaire recherché"
+                                    value={ownerForm.name}
+                                    onchange={handleOwnerNameChange}
+                                    onfocus={handleOwnerFocus}
+                                    onblur={handleOwnerBlur}
+                                    class="slds-m-bottom_small">
+                                </lightning-input>
+
+                                <template if:true={showOwnerSuggestions}>
+                                    <div class="street-suggestions" onmouseenter={handleOwnerDropdownMouseEnter} onmouseleave={handleOwnerDropdownMouseLeave}>
+                                        <template for:each={ownerSuggestions} for:item="sugg">
+                                            <div key={sugg.id}
+                                                 class="street-option"
+                                                 data-ownername={sugg.value}
+                                                 data-ownerdisplay={sugg.display}
+                                                 onclick={handleOwnerSelection}>
+                                                <lightning-icon icon-name="standard:people" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                                                {sugg.display}
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="slds-form-element__help slds-text-color_weak">
+                            Exemples : "BRIEN, RITA" ou "VILLE DE KIRKLAND"
+                        </div>
+                    </div>
+
+                    <!-- Plus de champ Prénom: simplification -->
+
+                    <!-- Message personne morale détectée -->
+                    <template if:true={isCompanyDetected}>
+                        <div class="slds-notify slds-notify_alert slds-theme_info slds-m-bottom_small">
+                            <span class="slds-assistive-text">Info</span>
+                            <h2>Personne morale détectée - recherche directe</h2>
+                        </div>
+                    </template>
                 </div>
             </template>
             
