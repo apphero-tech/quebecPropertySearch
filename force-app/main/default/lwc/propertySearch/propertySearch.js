@@ -10,6 +10,7 @@ import searchByOwner from '@salesforce/apex/AddressSearchController.searchByOwne
 import searchOwnerSuggestions from '@salesforce/apex/AddressSearchController.searchOwnerSuggestions';
 import searchByLot from '@salesforce/apex/AddressSearchController.searchByLot';
 import searchByMatricule from '@salesforce/apex/AddressSearchController.searchByMatricule';
+import saveCompleteProperty from '@salesforce/apex/AddressSearchController.saveCompleteProperty';
 
 export default class PropertySearch extends LightningElement {
     
@@ -607,6 +608,29 @@ export default class PropertySearch extends LightningElement {
         }
         
         this.performSearch();
+    }
+    
+    /**
+     * Gestionnaire: clic sur "Save Assessment" (appel Apex)
+     */
+    handleSaveAssessment() {
+        console.log('Save Assessment clicked');
+        
+        saveCompleteProperty({ mongoData: JSON.stringify(this.properties) })
+            .then((result) => {
+                this.dispatchEvent(new ShowToastEvent({
+                    title: 'Sauvegarde réussie',
+                    message: 'Assessment sauvegardé: ' + result,
+                    variant: 'success'
+                }));
+            })
+            .catch((error) => {
+                this.dispatchEvent(new ShowToastEvent({
+                    title: 'Erreur',
+                    message: 'Erreur sauvegarde: ' + (error && error.body && error.body.message ? error.body.message : 'Inconnue'),
+                    variant: 'error'
+                }));
+            });
     }
     
     /**

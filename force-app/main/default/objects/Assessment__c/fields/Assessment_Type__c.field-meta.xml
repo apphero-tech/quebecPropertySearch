@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Assessment_Type__c</fullName>
+    <externalId>false</externalId>
+    <label>Type d&apos;évaluation</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Annual</fullName>
+                <default>false</default>
+                <label>Annuelle</label>
+            </value>
+            <value>
+                <fullName>Interim</fullName>
+                <default>false</default>
+                <label>Interim</label>
+            </value>
+            <value>
+                <fullName>Special</fullName>
+                <default>false</default>
+                <label>Spéciale</label>
+            </value>
+            <value>
+                <fullName>Reassessment</fullName>
+                <default>false</default>
+                <label>Réévaluation</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

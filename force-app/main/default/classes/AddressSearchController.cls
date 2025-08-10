@@ -994,4 +994,9 @@ public with sharing class AddressSearchController {
 
     
 
+    @AuraEnabled
+    public static String saveCompleteProperty(String mongoData) {
+        System.debug('Données reçues: ' + mongoData);
+        return 'Données reçues avec succès - ' + mongoData.length() + ' caractères';
+    }
 } 

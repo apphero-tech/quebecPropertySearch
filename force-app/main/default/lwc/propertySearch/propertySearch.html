@@ -933,6 +933,18 @@
                     </template>
                 </template>
                 
+                <!-- Bouton Save Assessment -->
+                <template if:true={showPropertyDetails}>
+                    <div class="slds-m-top_medium slds-text-align_center">
+                        <lightning-button 
+                            variant="brand" 
+                            label="Save Assessment"
+                            title="Enregistrer cette évaluation"
+                            onclick={handleSaveAssessment}>
+                        </lightning-button>
+                    </div>
+                </template>
+                
                 <!-- Aucun résultat -->
                 <template if:true={showNoResults}>
                     <div class="slds-box slds-theme_warning">

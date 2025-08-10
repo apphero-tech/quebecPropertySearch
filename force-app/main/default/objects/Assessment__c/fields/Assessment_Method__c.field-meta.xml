@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Assessment_Method__c</fullName>
+    <externalId>false</externalId>
+    <label>Méthode d&apos;évaluation</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Comparable Sales</fullName>
+                <default>false</default>
+                <label>Ventes comparables</label>
+            </value>
+            <value>
+                <fullName>Income Approach</fullName>
+                <default>false</default>
+                <label>Approche par le revenu</label>
+            </value>
+            <value>
+                <fullName>Cost Approach</fullName>
+                <default>false</default>
+                <label>Approche par le coût</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>
