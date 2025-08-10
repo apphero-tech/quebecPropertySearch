@@ -303,9 +303,14 @@
                                                         <p><strong>Version :</strong> {property.version}</p>
                                                         <p><strong>Code municipalité :</strong> {property.codeMunicipalite}</p>
                                                         <p><strong>Année du rôle :</strong> {property.anneeRole}</p>
+                                                        <p><strong>Code type rôle :</strong> {property.rlm03A}</p>
+                                                        <p><strong>Date création rôle :</strong> {property.rlm04A}</p>
                                                     </div>
                                                     <div class="slds-col slds-size_1-of-2">
                                                         <p><strong>Code postal :</strong> {property.postalCode}</p>
+                                                        <p><strong>Code statut rôle :</strong> {property.rlm05A}</p>
+                                                        <p><strong>Code version rôle :</strong> {property.rlm06A}</p>
+                                                        <p><strong>Code organisme responsable :</strong> {property.rlm07A}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -367,9 +372,16 @@
                                                     <div class="slds-col slds-size_1-of-2">
                                                         <p><strong>Code d'utilisation :</strong> {property.rl0105A}</p>
                                                         <p><strong>Matricule :</strong> {property.rl0106A}</p>
+                                                        <p><strong>Code de l'évaluateur :</strong> {property.rl0107A}</p>
+                                                        <p><strong>Code type propriété :</strong> {property.rl0108A}</p>
+                                                        <p><strong>Code statut propriété :</strong> {property.rl0109A}</p>
                                                     </div>
                                                     <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Code de l'évaluateur :</strong> {property.rl0107A}</p>
+                                                        <p><strong>Code zone spéciale :</strong> {property.rl0110A}</p>
+                                                        <p><strong>Code restriction :</strong> {property.rl0111A}</p>
+                                                        <p><strong>Code environnement :</strong> {property.rl0112A}</p>
+                                                        <p><strong>Code type rôle :</strong> {property.rlm03A}</p>
+                                                        <p><strong>Date création rôle :</strong> {property.rlm04A}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -394,44 +406,50 @@
                                                                         <strong>{owner.fullName}</strong>
                                                                     </p>
                                                                     <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">
-                                                                        {owner.status}
+                                                                        {owner.statutLabel}
                                                                     </p>
 
-                                                                    <!-- Afficher adresse complète si disponible -->
-                                                                    <template if:true={owner.adressePostale}>
-                                                                        <p class="slds-text-body_small slds-m-bottom_x-small">{owner.adressePostale}</p>
+                                                                    <!-- Adresse complète formatée -->
+                                                                    <template if:true={owner.adresseFormatee}>
+                                                                        <p class="slds-text-body_small slds-m-bottom_x-small">{owner.adresseFormatee}</p>
                                                                     </template>
-                                                                    <template if:false={owner.adressePostale}>
-                                                                        <template if:true={owner.numeroCivique}>
-                                                                            <p class="slds-text-body_small slds-m-bottom_x-small">
-                                                                                {owner.numeroCivique} {owner.voiePublique}
-                                                                                <template if:true={owner.codeGenerique}> ({owner.codeGenerique})</template>
-                                                                            </p>
+                                                                    <template if:false={owner.adresseFormatee}>
+                                                                        <!-- Fallback vers l'ancien format si adresseFormatee n'est pas disponible -->
+                                                                        <template if:true={owner.adressePostale}>
+                                                                            <p class="slds-text-body_small slds-m-bottom_x-small">{owner.adressePostale}</p>
+                                                                        </template>
+                                                                        <template if:false={owner.adressePostale}>
+                                                                            <template if:true={owner.adresse.numeroCivique}>
+                                                                                <p class="slds-text-body_small slds-m-bottom_x-small">
+                                                                                    {owner.adresse.numeroCivique} {owner.adresse.nomVoiePublique}
+                                                                                    <template if:true={owner.adresse.codeGenerique}> ({owner.adresse.codeGenerique})</template>
+                                                                                </p>
+                                                                            </template>
                                                                         </template>
                                                                     </template>
 
-                                                                    <template if:true={owner.municipalite}>
+                                                                    <template if:true={owner.adresse.municipalite}>
                                                                         <p class="slds-text-body_small slds-m-bottom_x-small">
-                                                                            {owner.municipalite}
-                                                                            <template if:true={owner.codePostal}> {owner.codePostal}</template>
+                                                                            {owner.adresse.municipalite}
+                                                                            <template if:true={owner.adresse.codePostal}> {owner.adresse.codePostal}</template>
                                                                         </p>
                                                                     </template>
 
-                                                                    <template if:true={owner.province}>
-                                                                        <p class="slds-text-body_small slds-m-bottom_x-small">{owner.province}</p>
+                                                                    <template if:true={owner.adresse.province}>
+                                                                        <p class="slds-text-body_small slds-m-bottom_x-small">{owner.adresse.province}</p>
                                                                     </template>
 
                                                                     <!-- Case postale si présente -->
-                                                                    <template if:true={owner.casePostale}>
+                                                                    <template if:true={owner.adresse.casePostale}>
                                                                         <p class="slds-text-body_small slds-m-bottom_x-small">
-                                                                            C.P. {owner.casePostale}
-                                                                            <template if:true={owner.succursalePostale}> Succ. {owner.succursalePostale}</template>
+                                                                            C.P. {owner.adresse.casePostale}
+                                                                            <template if:true={owner.adresse.succursalePostale}> Succ. {owner.adresse.succursalePostale}</template>
                                                                         </p>
                                                                     </template>
 
                                                                     <template if:true={owner.dateInscription}>
                                                                         <p class="slds-text-body_small slds-text-color_weak">
-                                                                            Inscrit depuis : {owner.dateInscription}
+                                                                            Inscrit depuis : {owner.dateInscriptionFormatted}
                                                                         </p>
                                                                     </template>
                                                                 </div>
@@ -452,44 +470,50 @@
                                                                             <strong>{owner.fullName}</strong>
                                                                         </p>
                                                                         <p class="slds-text-body_small slds-text-color_weak">
-                                                                            {owner.status}
+                                                                            {owner.statutLabel}
                                                                         </p>
 
-                                                                        <!-- Afficher adresse complète si disponible -->
-                                                                        <template if:true={owner.adressePostale}>
-                                                                            <p class="slds-text-body_small">{owner.adressePostale}</p>
+                                                                        <!-- Adresse complète formatée -->
+                                                                        <template if:true={owner.adresseFormatee}>
+                                                                            <p class="slds-text-body_small">{owner.adresseFormatee}</p>
                                                                         </template>
-                                                                        <template if:false={owner.adressePostale}>
-                                                                            <template if:true={owner.numeroCivique}>
-                                                                                <p class="slds-text-body_small">
-                                                                                    {owner.numeroCivique} {owner.voiePublique}
-                                                                                    <template if:true={owner.codeGenerique}> ({owner.codeGenerique})</template>
-                                                                                </p>
+                                                                        <template if:false={owner.adresseFormatee}>
+                                                                            <!-- Fallback vers l'ancien format si adresseFormatee n'est pas disponible -->
+                                                                            <template if:true={owner.adressePostale}>
+                                                                                <p class="slds-text-body_small">{owner.adressePostale}</p>
+                                                                            </template>
+                                                                            <template if:false={owner.adressePostale}>
+                                                                                <template if:true={owner.adresse.numeroCivique}>
+                                                                                    <p class="slds-text-body_small">
+                                                                                        {owner.adresse.numeroCivique} {owner.adresse.nomVoiePublique}
+                                                                                        <template if:true={owner.adresse.codeGenerique}> ({owner.adresse.codeGenerique})</template>
+                                                                                    </p>
+                                                                                </template>
                                                                             </template>
                                                                         </template>
 
-                                                                        <template if:true={owner.municipalite}>
+                                                                        <template if:true={owner.adresse.municipalite}>
                                                                             <p class="slds-text-body_small">
-                                                                                {owner.municipalite}
-                                                                                <template if:true={owner.codePostal}> {owner.codePostal}</template>
+                                                                                {owner.adresse.municipalite}
+                                                                                <template if:true={owner.adresse.codePostal}> {owner.adresse.codePostal}</template>
                                                                             </p>
                                                                         </template>
 
-                                                                        <template if:true={owner.province}>
-                                                                            <p class="slds-text-body_small">{owner.province}</p>
+                                                                        <template if:true={owner.adresse.province}>
+                                                                            <p class="slds-text-body_small">{owner.adresse.province}</p>
                                                                         </template>
 
                                                                         <!-- Case postale si présente -->
-                                                                        <template if:true={owner.casePostale}>
+                                                                        <template if:true={owner.adresse.casePostale}>
                                                                             <p class="slds-text-body_small">
-                                                                                C.P. {owner.casePostale}
-                                                                                <template if:true={owner.succursalePostale}> Succ. {owner.succursalePostale}</template>
+                                                                                C.P. {owner.adresse.casePostale}
+                                                                                <template if:true={owner.adresse.succursalePostale}> Succ. {owner.adresse.succursalePostale}</template>
                                                                             </p>
                                                                         </template>
 
                                                                         <template if:true={owner.dateInscription}>
                                                                             <p class="slds-text-body_small slds-text-color_weak">
-                                                                                Inscrit depuis : {owner.dateInscription}
+                                                                                Inscrit depuis : {owner.dateInscriptionFormatted}
                                                                             </p>
                                                                         </template>
                                                                     </div>
@@ -520,6 +544,12 @@
                                                 <div class="slds-grid slds-wrap slds-gutters">
                                                     <div class="slds-col slds-size_1-of-2">
                                                         <p><strong>Condition d'inscription :</strong> {property.conditionInscription}</p>
+                                                        <p><strong>Code des conditions :</strong> {property.rl0201U}</p>
+                                                    </div>
+                                                    <div class="slds-col slds-size_1-of-2">
+                                                        <template if:true={property.hasSpecialCondition}>
+                                                            <p><strong>Condition particulière :</strong> {property.conditionInscriptionText}</p>
+                                                        </template>
                                                     </div>
                                                 </div>
                                             </div>
@@ -531,22 +561,25 @@
                                     <lightning-accordion-section name="section3" label="🌍 Section 3 : Caractéristiques de l'unité d'évaluation">
                                         <div class="slds-p-around_medium">
                                             
-                                            <!-- Groupe Caractéristiques du terrain -->
+                                            <!-- Groupe Superficie de l'immeuble -->
                                             <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">🌱 Groupe Caractéristiques du terrain</h4>
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">📏 Groupe Superficie de l'immeuble</h4>
                                                 <div class="slds-grid slds-wrap slds-gutters">
                                                     <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Dimension linéaire/mesure frontale :</strong> {property.rl0301A}</p>
-                                                        <p><strong>Superficie du terrain :</strong> {property.rl0302A}</p>
-                                                        <p><strong>Code zonage agricole :</strong> {property.rl0303A}</p>
-                                                        <p><strong>Superficie exploitation agricole totale :</strong> {property.rl0304A}</p>
-                                                        <p><strong>Superficie exploitation agricole en zone :</strong> {property.rl0305A}</p>
+                                                        <p><strong>Superficie du terrain :</strong> {property.rl0301A}</p>
+                                                        <p><strong>Code unité de mesure :</strong> {property.rl0301B}</p>
+                                                        <p><strong>Superficie du terrain en mètres carrés :</strong> {property.rl0301C}</p>
+                                                        <p><strong>Superficie du terrain en pieds carrés :</strong> {property.rl0301D}</p>
+                                                        <p><strong>Superficie du terrain en acres :</strong> {property.rl0301E}</p>
+                                                        <p><strong>Superficie du terrain en hectares :</strong> {property.rl0301F}</p>
                                                     </div>
                                                     <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Superficie imposition maximale :</strong> {property.rl0314A}</p>
-                                                        <p><strong>Superficie vocation forestière totale :</strong> {property.rl0315A}</p>
-                                                        <p><strong>Superficie vocation forestière en zone agricole :</strong> {property.rl0316A}</p>
-                                                        <p><strong>Superficie agricole exploitable non exploitée :</strong> {property.rl0320A}</p>
+                                                        <p><strong>Superficie du terrain en arpents :</strong> {property.rl0301G}</p>
+                                                        <p><strong>Superficie du terrain en verges carrées :</strong> {property.rl0301H}</p>
+                                                        <p><strong>Superficie du terrain en toises carrées :</strong> {property.rl0301I}</p>
+                                                        <p><strong>Superficie du terrain en perches carrées :</strong> {property.rl0301J}</p>
+                                                        <p><strong>Superficie du terrain en chaînes carrées :</strong> {property.rl0301K}</p>
+                                                        <p><strong>Superficie du terrain en roods :</strong> {property.rl0301L}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -560,10 +593,51 @@
                                                         <p><strong>Année construction originelle :</strong> {property.rl0307A}</p>
                                                         <p><strong>Mention réelle/estimée :</strong> {property.rl0307B}</p>
                                                         <p><strong>Aire d'étages :</strong> {property.rl0308A}</p>
+                                                        <p><strong>Nombre d'étages :</strong> {property.rl0311A}</p>
+                                                        <p><strong>Nombre d'unités locatives :</strong> {property.rl0312A}</p>
                                                     </div>
                                                     <div class="slds-col slds-size_1-of-2">
                                                         <p><strong>Code lien physique :</strong> {property.rl0309A}</p>
                                                         <p><strong>Code genre construction :</strong> {property.rl0310A}</p>
+                                                        <p><strong>Code d'utilisation :</strong> {property.rl0313A}</p>
+                                                        <p><strong>Superficie bâtiment :</strong> {property.rl0317A}</p>
+                                                        <p><strong>Code type construction :</strong> {property.rl0318A}</p>
+                                                        <p><strong>Code qualité construction :</strong> {property.rl0319A}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Caractéristiques supplémentaires -->
+                                            <div class="slds-box slds-m-bottom_medium">
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">🔧 Caractéristiques supplémentaires</h4>
+                                                <div class="slds-grid slds-wrap slds-gutters">
+                                                    <div class="slds-col slds-size_1-of-2">
+                                                        <p><strong>Code accessibilité :</strong> {property.rl0321A}</p>
+                                                        <p><strong>Code équipements spéciaux :</strong> {property.rl0322A}</p>
+                                                        <p><strong>Code restrictions :</strong> {property.rl0323A}</p>
+                                                    </div>
+                                                    <div class="slds-col slds-size_1-of-2">
+                                                        <p><strong>Code environnement :</strong> {property.rl0324A}</p>
+                                                        <p><strong>Superficie exploitation agricole non exploitée :</strong> {property.rl0320A}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Groupe Caractéristiques du terrain -->
+                                            <div class="slds-box slds-m-bottom_medium">
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">🌱 Groupe Caractéristiques du terrain</h4>
+                                                <div class="slds-grid slds-wrap slds-gutters">
+                                                    <div class="slds-col slds-size_1-of-2">
+                                                        <p><strong>Dimension linéaire/mesure frontale :</strong> {property.rl0302A}</p>
+                                                        <p><strong>Code zonage agricole :</strong> {property.rl0303A}</p>
+                                                        <p><strong>Superficie exploitation agricole totale :</strong> {property.rl0304A}</p>
+                                                        <p><strong>Superficie exploitation agricole en zone :</strong> {property.rl0305A}</p>
+                                                        <p><strong>Superficie imposition maximale :</strong> {property.rl0314A}</p>
+                                                    </div>
+                                                    <div class="slds-col slds-size_1-of-2">
+                                                        <p><strong>Superficie vocation forestière totale :</strong> {property.rl0315A}</p>
+                                                        <p><strong>Superficie vocation forestière en zone agricole :</strong> {property.rl0316A}</p>
+                                                        <p><strong>Superficie agricole exploitable non exploitée :</strong> {property.rl0320A}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -592,9 +666,14 @@
                                                     <div class="slds-col slds-size_1-of-2">
                                                         <p><strong>Valeur du terrain inscrite au rôle :</strong> {property.rl0402A}</p>
                                                         <p><strong>Valeur du/des bâtiments inscrite au rôle :</strong> {property.rl0403A}</p>
+                                                        <p><strong>Valeur unitaire terrain :</strong> {property.rl0411A}</p>
+                                                        <p><strong>Valeur unitaire bâtiment :</strong> {property.rl0412A}</p>
                                                     </div>
                                                     <div class="slds-col slds-size_1-of-2">
                                                         <p><strong>Valeur totale de l'immeuble inscrite au rôle :</strong> {property.rl0404A}</p>
+                                                        <p><strong>Valeur de marché estimée :</strong> {property.rl0413A}</p>
+                                                        <p><strong>Valeur d'assurance :</strong> {property.rl0414A}</p>
+                                                        <p><strong>Valeur de remplacement :</strong> {property.rl0415A}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -605,6 +684,13 @@
                                                 <div class="slds-grid slds-wrap slds-gutters">
                                                     <div class="slds-col slds-size_1-of-2">
                                                         <p><strong>Valeur du même immeuble au rôle antérieur :</strong> {property.rl0405A}</p>
+                                                        <p><strong>Code d'exonération :</strong> {property.rl0406A}</p>
+                                                        <p><strong>Code de classification :</strong> {property.rl0407A}</p>
+                                                    </div>
+                                                    <div class="slds-col slds-size_1-of-2">
+                                                        <p><strong>Code de facteur d'ajustement :</strong> {property.rl0408A}</p>
+                                                        <p><strong>Facteur d'ajustement :</strong> {property.rl0409A}</p>
+                                                        <p><strong>Code de facteur d'ajustement :</strong> {property.rl0410A}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -641,9 +727,15 @@
                                                     <div class="slds-col slds-size_1-of-2">
                                                         <p><strong>Terrains vagues desservis :</strong> {property.rl0501A}</p>
                                                         <p><strong>Classe immeubles non résidentiels :</strong> {property.rl0502A}</p>
+                                                        <p><strong>Pourcentage imposable :</strong> {property.rl0502A}</p>
+                                                        <p><strong>Code d'exonération :</strong> {property.rl0502B}</p>
+                                                        <p><strong>Date d'exonération :</strong> {property.rl0502C}</p>
                                                     </div>
                                                     <div class="slds-col slds-size_1-of-2">
                                                         <p><strong>Classe immeubles industriels :</strong> {property.rl0503A}</p>
+                                                        <p><strong>Code tarification :</strong> {property.rl0503A}</p>
+                                                        <p><strong>Description tarification :</strong> {property.rl0503B}</p>
+                                                        <p><strong>Facteur d'ajustement :</strong> {property.rl0503C}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -672,9 +764,12 @@
                                                     <div class="slds-col slds-size_1-of-2">
                                                         <p><strong>Nom de l'évaluateur signataire du rôle :</strong> {property.rl0601A}</p>
                                                         <p><strong>Prénom de l'évaluateur signataire du rôle :</strong> {property.rl0601B}</p>
+                                                        <p><strong>Code statut rôle :</strong> {property.rlm05A}</p>
+                                                        <p><strong>Code version rôle :</strong> {property.rlm06A}</p>
                                                     </div>
                                                     <div class="slds-col slds-size_1-of-2">
                                                         <p><strong>Titre de l'évaluateur signataire du rôle :</strong> {property.rl0602A}</p>
+                                                        <p><strong>Code organisme responsable :</strong> {property.rlm07A}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -808,6 +903,23 @@
                                                         <p><strong>Valeur au rôle :</strong> {property.rlzu3104}</p>
                                                         <p><strong>Valeur terrain municipale :</strong> {property.rlzu4001}</p>
                                                         <p><strong>Valeur bâtiment municipale :</strong> {property.rlzu4002}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Sections spéciales RLZU -->
+                                            <div class="slds-box slds-m-bottom_medium">
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">🔍 Sections spéciales RLZU</h4>
+                                                <div class="slds-grid slds-wrap slds-gutters">
+                                                    <div class="slds-col slds-size_1-of-2">
+                                                        <p><strong>Autre superficie :</strong> {property.rlzu3001A}</p>
+                                                        <p><strong>Type superficie :</strong> {property.rlzu3001B}</p>
+                                                        <p><strong>Description superficie :</strong> {property.rlzu3001C}</p>
+                                                    </div>
+                                                    <div class="slds-col slds-size_1-of-2">
+                                                        <p><strong>Pourcentage copropriété :</strong> {property.rlzu5001A}</p>
+                                                        <p><strong>Type copropriété :</strong> {property.rlzu5001B}</p>
+                                                        <p><strong>Description copropriété :</strong> {property.rlzu5001C}</p>
                                                     </div>
                                                 </div>
                                             </div>

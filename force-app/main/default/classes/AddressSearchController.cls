@@ -16,11 +16,13 @@ public with sharing class AddressSearchController {
             '66023' => 'Montreal',
             '23027' => 'Quebec'
         };
-        // Si le code est déjà un nom de collection supporté, le retourner tel quel
-        if (codeToCollection.values().contains(municipalityCode)) {
-            return municipalityCode;
+        // 1) Si une correspondance code→collection existe, l'utiliser
+        if (codeToCollection.containsKey(municipalityCode)) {
+            return codeToCollection.get(municipalityCode);
         }
-        return codeToCollection.get(municipalityCode);
+        // 2) Sinon, considérer l'entrée comme un nom de collection renvoyé par l'API
+        //    (permet Val-Morin, etc.)
+        return municipalityCode;
     }
     
     /**
@@ -34,6 +36,10 @@ public with sharing class AddressSearchController {
             System.debug('=== AddressSearchController.getStreetSuggestions START ===');
             System.debug('Search term: ' + searchTerm);
             System.debug('Municipality code: ' + municipalityCode);
+            if (String.isBlank(apiKey)) {
+                System.debug('Missing API key, returning empty list');
+                return new List<String>();
+            }
             
             if (String.isBlank(searchTerm) || searchTerm.length() < 2) {
                 System.debug('Search term too short, returning empty list');
@@ -47,35 +53,23 @@ public with sharing class AddressSearchController {
                 return new List<String>();
             }
             
-            // Construction de l'URL
+            // Construction et exécution de la requête via helper
             String endpoint = API_BASE_URL + '/distinct-streets';
-            String queryParams = '?collection=' + EncodingUtil.urlEncode(collectionName, 'UTF-8') + '&address=' + EncodingUtil.urlEncode(searchTerm, 'UTF-8');
-            String fullUrl = endpoint + queryParams;
-            
-            System.debug('Full URL: ' + fullUrl);
-            
-            // Configuration de la requête HTTP
-            HttpRequest req = new HttpRequest();
-            req.setEndpoint(fullUrl);
-            req.setMethod('GET');
-            req.setHeader('x-api-key', apiKey);
-            req.setHeader('Content-Type', 'application/json');
-            req.setTimeout(30000); // 30 secondes
-            
-            // Exécution de la requête
-            Http http = new Http();
-            HttpResponse res = http.send(req);
-            
-            System.debug('Response status: ' + res.getStatusCode());
-            System.debug('Response body: ' + res.getBody());
-            
-            if (res.getStatusCode() != 200) {
-                System.debug('API Error: ' + res.getStatusCode() + ' - ' + res.getBody());
+            Map<String, String> qp = new Map<String, String>{
+                'collection' => collectionName,
+                'address' => searchTerm
+            };
+            HttpRequest req = PropertySearchHttp.buildGet(endpoint, qp, apiKey, 30000);
+            HttpResponse res = PropertySearchHttp.send(req);
+            System.debug('Response status: ' + (res == null ? -1 : res.getStatusCode()));
+            System.debug('Response body: ' + (res == null ? 'null' : res.getBody()));
+            String body = PropertySearchHttp.getBodyIfOk(res);
+            if (body == null) {
+                System.debug('API Error or null response, returning empty list');
                 return new List<String>();
             }
-            
             // Parsing sécurisé de la réponse JSON
-            List<String> suggestions = parseStreetSuggestions(res.getBody());
+            List<String> suggestions = parseStreetSuggestions(body);
             
 
             
@@ -219,50 +213,32 @@ public with sharing class AddressSearchController {
     public static List<String> getAvailableCollections(String apiKey) {
         try {
             System.debug('=== AddressSearchController.getAvailableCollections START ===');
+            if (String.isBlank(apiKey)) {
+                System.debug('Missing API key, returning empty list');
+                return new List<String>();
+            }
             
-            // Construction de l'URL
+            // Construction et exécution de la requête via helper
             String endpoint = API_BASE_URL + '/collections-info';
-            String fullUrl = endpoint;
-            
-            System.debug('Full URL: ' + fullUrl);
-            
-            // Configuration de la requête HTTP
-            HttpRequest req = new HttpRequest();
-            req.setEndpoint(fullUrl);
-            req.setMethod('GET');
-            req.setHeader('x-api-key', apiKey);
-            req.setHeader('Content-Type', 'application/json');
-            req.setTimeout(30000);
-            
-            // Exécution de la requête
-            Http http = new Http();
-            HttpResponse res = http.send(req);
-            
-            System.debug('Response status: ' + res.getStatusCode());
-            System.debug('Response body: ' + res.getBody());
-            
-            if (res.getStatusCode() != 200) {
-                System.debug('API Error: ' + res.getStatusCode() + ' - ' + res.getBody());
+            HttpRequest req = PropertySearchHttp.buildGet(endpoint, new Map<String,String>(), apiKey, 30000);
+            HttpResponse res = PropertySearchHttp.send(req);
+            System.debug('Response status: ' + (res == null ? -1 : res.getStatusCode()));
+            System.debug('Response body: ' + (res == null ? 'null' : res.getBody()));
+            String body = PropertySearchHttp.getBodyIfOk(res);
+            if (body == null) {
+                System.debug('API Error or null response, returning empty list');
                 return new List<String>();
             }
             
             // Parsing de la réponse JSON
-            List<String> allCollections = parseCollectionsInfo(res.getBody());
-            
-            // Filtrer éventuellement ici selon la clé API (conservé à Kirkland par défaut)
-            List<String> authorizedCollections = new List<String>();
-            for (String collection : allCollections) {
-                if (collection == 'Kirkland') {
-                    authorizedCollections.add(collection);
-                }
-            }
-            
-            System.debug('All collections from API: ' + allCollections);
-            System.debug('Authorized collections for this API key: ' + authorizedCollections);
-            System.debug('Final collections count: ' + authorizedCollections.size());
+            List<String> allCollections = parseCollectionsInfo(body);
+
+            // Retourner directement les collections renvoyées par l'API (les permissions sont gérées côté API)
+            System.debug('All collections from API (no client-side filtering): ' + allCollections);
+            System.debug('Final collections count: ' + allCollections.size());
             System.debug('=== AddressSearchController.getAvailableCollections END ===');
             
-            return authorizedCollections;
+            return allCollections;
             
         } catch (Exception e) {
             System.debug('Exception in getAvailableCollections: ' + e.getMessage());
@@ -359,6 +335,10 @@ public with sharing class AddressSearchController {
             System.debug('Street: ' + streetName + ', Number: ' + streetNumber);
             System.debug('Street is blank: ' + String.isBlank(streetName));
             System.debug('Number is blank: ' + String.isBlank(streetNumber));
+            if (String.isBlank(apiKey)) {
+                System.debug('Missing API key, returning null');
+                return null;
+            }
             
             // Déterminer la collection à partir du code municipalité
             String collectionName = getCollectionName(municipalityCode);
@@ -381,26 +361,18 @@ public with sharing class AddressSearchController {
             
             // ✅ ÉTAPE 1 : Recherche pour obtenir l'ID du document
             String searchEndpoint = API_BASE_URL + '/search-full-address';
-            String searchParams = '?collection=' + EncodingUtil.urlEncode(collectionName, 'UTF-8') + '&address=' + EncodingUtil.urlEncode(cleanStreetName, 'UTF-8') + '&doorNumber=' + EncodingUtil.urlEncode(streetNumber, 'UTF-8');
-            String searchUrl = searchEndpoint + searchParams;
-            
-            System.debug('Search URL: ' + searchUrl);
-            
-            HttpRequest searchReq = new HttpRequest();
-            searchReq.setEndpoint(searchUrl);
-            searchReq.setMethod('GET');
-            searchReq.setHeader('x-api-key', apiKey);
-            searchReq.setHeader('Content-Type', 'application/json');
-            searchReq.setTimeout(30000);
-            
-            Http http = new Http();
-            HttpResponse searchRes = http.send(searchReq);
-            
-            System.debug('Search response status: ' + searchRes.getStatusCode());
-            System.debug('Search response body: ' + searchRes.getBody());
-            
-            if (searchRes.getStatusCode() != 200) {
-                System.debug('Search API Error: ' + searchRes.getStatusCode() + ' - ' + searchRes.getBody());
+            Map<String, String> searchQp = new Map<String, String>{
+                'collection' => collectionName,
+                'address' => cleanStreetName,
+                'doorNumber' => streetNumber
+            };
+            HttpRequest searchReq = PropertySearchHttp.buildGet(searchEndpoint, searchQp, apiKey, 30000);
+            HttpResponse searchRes = PropertySearchHttp.send(searchReq);
+            System.debug('Search response status: ' + (searchRes == null ? -1 : searchRes.getStatusCode()));
+            System.debug('Search response body: ' + (searchRes == null ? 'null' : searchRes.getBody()));
+            String searchBody = PropertySearchHttp.getBodyIfOk(searchRes);
+            if (searchBody == null) {
+                System.debug('Search API Error or null response');
                 return null;
             }
             
@@ -415,30 +387,21 @@ public with sharing class AddressSearchController {
             
             // ✅ ÉTAPE 3 : Récupérer le document complet avec l'ID
             String documentEndpoint = API_BASE_URL + '/document/' + documentId;
-            String documentParams = '?collection=' + EncodingUtil.urlEncode(collectionName, 'UTF-8');
-            String documentUrl = documentEndpoint + documentParams;
-            
-            System.debug('Document URL: ' + documentUrl);
-            
-            HttpRequest documentReq = new HttpRequest();
-            documentReq.setEndpoint(documentUrl);
-            documentReq.setMethod('GET');
-            documentReq.setHeader('x-api-key', apiKey);
-            documentReq.setHeader('Content-Type', 'application/json');
-            documentReq.setTimeout(30000);
-            
-            HttpResponse documentRes = http.send(documentReq);
-            
-            System.debug('Document response status: ' + documentRes.getStatusCode());
-            System.debug('Document response body: ' + documentRes.getBody());
-            
-            if (documentRes.getStatusCode() != 200) {
-                System.debug('Document API Error: ' + documentRes.getStatusCode() + ' - ' + documentRes.getBody());
+            Map<String, String> docQp = new Map<String, String>{
+                'collection' => collectionName
+            };
+            HttpRequest documentReq = PropertySearchHttp.buildGet(documentEndpoint, docQp, apiKey, 30000);
+            HttpResponse documentRes = PropertySearchHttp.send(documentReq);
+            System.debug('Document response status: ' + (documentRes == null ? -1 : documentRes.getStatusCode()));
+            System.debug('Document response body: ' + (documentRes == null ? 'null' : documentRes.getBody()));
+            String docBody = PropertySearchHttp.getBodyIfOk(documentRes);
+            if (docBody == null) {
+                System.debug('Document API Error or null response');
                 return null;
             }
             
             // ✅ ÉTAPE 4 : Parser le document complet et retourner directement le Map
-            Map<String, Object> document = parseCompletePropertyDetails(documentRes.getBody());
+            Map<String, Object> document = parseCompletePropertyDetails(docBody);
             
             System.debug('Final document: ' + document);
             System.debug('=== AddressSearchController.getPropertyDetails END ===');
@@ -471,6 +434,10 @@ public with sharing class AddressSearchController {
             System.debug('Municipality: ' + municipalityCode);
             System.debug('=== AddressSearchController.searchByOwner START ===');
             System.debug('Params - name: ' + name + ', firstName: ' + firstName + ', ownerType: ' + ownerType + ', municipalityCode: ' + municipalityCode);
+            if (String.isBlank(apiKey)) {
+                System.debug('Missing API key, returning empty list');
+                return documents;
+            }
 
             // Déterminer la collection à partir du code municipalité
             String collectionName = getCollectionName(municipalityCode);
@@ -488,26 +455,38 @@ public with sharing class AddressSearchController {
 
             // Construire les URLs selon la stratégie validée
             List<Object> result;
-            String baseParams = '?collection=' + EncodingUtil.urlEncode(collectionName, 'UTF-8');
-
             // Contrat API: always use last_name (uppercase) and optional first_name (uppercase)
             String ln = String.isBlank(name) ? '' : name.toUpperCase();
             String fn = String.isBlank(firstName) ? '' : firstName.toUpperCase();
-            String url = endpoint + baseParams + '&last_name=' + EncodingUtil.urlEncode(ln, 'UTF-8');
+            Map<String,String> qp = new Map<String,String>{
+                'collection' => collectionName,
+                'last_name' => ln
+            };
             if (String.isNotBlank(fn)) {
-                url += '&first_name=' + EncodingUtil.urlEncode(fn, 'UTF-8');
+                qp.put('first_name', fn);
             }
-            System.debug('Endpoint URL: ' + url);
-            result = performOwnerRequest(url, apiKey);
+            HttpRequest req = PropertySearchHttp.buildGet(endpoint, qp, apiKey, 30000);
+            HttpResponse resp = PropertySearchHttp.send(req);
+            System.debug('Owner search URL: ' + req.getEndpoint());
+            System.debug('Owner search status: ' + (resp == null ? -1 : resp.getStatusCode()));
+            System.debug('Owner search body: ' + (resp == null ? 'null' : resp.getBody()));
+            String body = PropertySearchHttp.getBodyIfOk(resp);
+            result = body == null ? new List<Object>() : parseOwnerSearchResponse(body);
             if (!result.isEmpty()) {
                 System.debug('API returned ' + result.size() + ' items');
                 return result;
             }
             // As a permissive fallback, retry last_name only if first_name was provided and got no result
             if (String.isNotBlank(fn)) {
-                String url2 = endpoint + baseParams + '&last_name=' + EncodingUtil.urlEncode(ln, 'UTF-8');
-                System.debug('Fallback URL (last_name only): ' + url2);
-                result = performOwnerRequest(url2, apiKey);
+                Map<String,String> qp2 = new Map<String,String>{
+                    'collection' => collectionName,
+                    'last_name' => ln
+                };
+                HttpRequest req2 = PropertySearchHttp.buildGet(endpoint, qp2, apiKey, 30000);
+                HttpResponse resp2 = PropertySearchHttp.send(req2);
+                System.debug('Fallback URL (last_name only): ' + req2.getEndpoint());
+                String body2 = PropertySearchHttp.getBodyIfOk(resp2);
+                result = body2 == null ? new List<Object>() : parseOwnerSearchResponse(body2);
                 if (!result.isEmpty()) {
                     return result;
                 }
@@ -586,6 +565,11 @@ public with sharing class AddressSearchController {
             System.debug('Original ownerName: ' + ownerName);
             System.debug('Municipality: ' + municipalityCode);
             System.debug('API key (masked): len=' + (apiKey == null ? 0 : apiKey.length()) + ', last4=' + (apiKey == null || apiKey.length() < 4 ? 'NA' : apiKey.substring(apiKey.length()-4)));
+            if (String.isBlank(apiKey)) {
+                System.debug('Missing API key, returning empty suggestions');
+                System.debug('=== OWNER SUGGESTIONS DEBUG END ===');
+                return suggestions;
+            }
             if (String.isBlank(ownerName) || ownerName.length() < 2) {
                 System.debug('Owner name too short, returning empty suggestions');
                 System.debug('=== OWNER SUGGESTIONS DEBUG END ===');
@@ -599,33 +583,27 @@ public with sharing class AddressSearchController {
                 return suggestions;
             }
 
-            // Nouvel endpoint: search-distinct-owner (retourne { owners: [...] })
+            // Endpoint distinct propriétaire: même pattern que les rues (query params via helper)
             String endpoint = API_BASE_URL + '/search-distinct-owner';
             String upper = ownerName == null ? '' : ownerName.trim().toUpperCase();
-            String params = '?collection=' + EncodingUtil.urlEncode(collectionName, 'UTF-8') +
-                            '&last_name=' + EncodingUtil.urlEncode(upper, 'UTF-8');
-            String url = endpoint + params;
-
-            HttpRequest req = new HttpRequest();
-            req.setEndpoint(url);
-            req.setMethod('GET');
-            req.setHeader('x-api-key', apiKey);
-            req.setHeader('Content-Type', 'application/json');
-            req.setTimeout(20000);
-
-            Http http = new Http();
-            HttpResponse res = http.send(req);
-            System.debug('Endpoint URL: ' + url);
-            System.debug('API call status: ' + res.getStatusCode());
-            System.debug('Raw response body: ' + res.getBody());
-            if (res.getStatusCode() != 200) {
-                System.debug('Non-200 status for owner suggestions, returning empty');
+            Map<String,String> qp = new Map<String,String>{
+                'collection' => collectionName,
+                'last_name' => upper
+            };
+            HttpRequest req = PropertySearchHttp.buildGet(endpoint, qp, apiKey, 20000);
+            HttpResponse res = PropertySearchHttp.send(req);
+            System.debug('Endpoint URL: ' + req.getEndpoint());
+            System.debug('API call status: ' + (res == null ? -1 : res.getStatusCode()));
+            System.debug('Raw response body: ' + (res == null ? 'null' : res.getBody()));
+            String body = PropertySearchHttp.getBodyIfOk(res);
+            if (body == null) {
+                System.debug('Non-200 status or null response for owner suggestions, returning empty');
                 System.debug('=== OWNER SUGGESTIONS DEBUG END ===');
                 return suggestions;
             }
 
             // Primary parse: { owners: [ { RL0201Ax, RL0201Bx }, ... ] }
-            Object jsonObj = JSON.deserializeUntyped(res.getBody());
+            Object jsonObj = JSON.deserializeUntyped(body);
             if (jsonObj instanceof Map<String, Object>) {
                 Map<String, Object> mapResp = (Map<String, Object>) jsonObj;
                 System.debug('Parsed response keys: ' + mapResp.keySet());
@@ -643,62 +621,22 @@ public with sharing class AddressSearchController {
                         return fromDistinct;
                     }
                 }
-                System.debug('Response does not contain owners key or empty owners; will try fallback');
+                System.debug('Response does not contain owners key or is empty; checking legacy list format');
             }
 
-            // Fallback: ancienne forme (tableau de documents MongoDB)
-            List<Object> docs = new List<Object>();
+            // Legacy fallback: ancienne forme (tableau de documents MongoDB) renvoyée par le même endpoint
             if (jsonObj instanceof List<Object>) {
-                docs = (List<Object>) jsonObj;
+                List<Object> docs = (List<Object>) jsonObj;
+                List<Object> fallbackSuggestions = buildOwnerSuggestionsFromDocuments(docs);
+                System.debug('Final suggestions size (legacy docs): ' + fallbackSuggestions.size());
+                System.debug('=== OWNER SUGGESTIONS DEBUG END ===');
+                return fallbackSuggestions;
             }
 
-            // Si résultat vide et saisie courte (2 caractères), fan-out sur A..Z sur le nouvel endpoint
-            if ((docs == null || docs.isEmpty()) && upper.length() == 2) {
-                List<Object> unionOwners = new List<Object>();
-                String alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-                for (Integer i = 0; i < alphabet.length(); i++) { // 'A'..'Z'
-                    String ch = alphabet.substring(i, i+1);
-                    String tryUrl = endpoint + '?collection=' + EncodingUtil.urlEncode(collectionName, 'UTF-8') +
-                                    '&last_name=' + EncodingUtil.urlEncode(upper + ch, 'UTF-8');
-
-                    try {
-                        HttpRequest req2 = new HttpRequest();
-                        req2.setEndpoint(tryUrl);
-                        req2.setMethod('GET');
-                        req2.setHeader('x-api-key', apiKey);
-                        req2.setHeader('Content-Type', 'application/json');
-                        req2.setTimeout(10000);
-                        HttpResponse res2 = http.send(req2);
-                        if (res2.getStatusCode() == 200) {
-                            Object obj2 = JSON.deserializeUntyped(res2.getBody());
-                            if (obj2 instanceof Map<String, Object>) {
-                                Map<String, Object> map2 = (Map<String, Object>) obj2;
-                                Object owners2 = map2.get('owners');
-                                if (owners2 instanceof List<Object>) {
-                                    unionOwners.addAll((List<Object>) owners2);
-                                }
-                            }
-                        }
-                    } catch (Exception ignore) {
-                        // continuer
-                    }
-
-                    if (unionOwners.size() >= 50) { // limite raisonnable
-                        break;
-                    }
-                }
-                if (!unionOwners.isEmpty()) {
-                    List<Object> distinctUnion = buildOwnerSuggestionsFromDistinctOwners(unionOwners);
-                    System.debug('Final suggestions size (distinct fan-out): ' + distinctUnion.size());
-                    System.debug('=== OWNER SUGGESTIONS DEBUG END ===');
-                    return distinctUnion;
-                }
-            }
-
-            List<Object> fallbackSuggestions = buildOwnerSuggestionsFromDocuments(docs);
-            System.debug('Final suggestions size (fallback docs): ' + fallbackSuggestions.size());
+            // Rien de parsable
+            System.debug('No owners found in response; returning empty suggestions');
             System.debug('=== OWNER SUGGESTIONS DEBUG END ===');
-            return fallbackSuggestions;
+            return suggestions;
         } catch (Exception e) {
             System.debug('Exception in searchOwnerSuggestions: ' + e.getMessage());
             System.debug('=== OWNER SUGGESTIONS DEBUG END ===');
@@ -829,6 +767,144 @@ public with sharing class AddressSearchController {
             return null;
         }
     }
+
+    /**
+     * Recherche d'une propriété par numéro de lot
+     * Retourne le document MongoDB complet (même forme que la recherche adresse)
+     */
+    @AuraEnabled(cacheable=true)
+    public static Map<String, Object> searchByLot(String apiKey, String municipalityCode, String lotNumber) {
+        try {
+            System.debug('=== AddressSearchController.searchByLot START ===');
+            if (String.isBlank(apiKey)) {
+                System.debug('Missing API key, returning null');
+                return null;
+            }
+            // Déterminer la collection à partir du code municipalité
+            String collectionName = getCollectionName(municipalityCode);
+            if (String.isBlank(collectionName)) {
+                System.debug('Unsupported municipality: ' + municipalityCode);
+                return null;
+            }
+            if (String.isBlank(lotNumber)) {
+                System.debug('Missing lotNumber, returning null');
+                return null;
+            }
+
+            // Étape 1: rechercher par lot pour obtenir l'_id
+            String searchEndpoint = API_BASE_URL + '/search-full-address';
+            Map<String, String> searchQp = new Map<String, String>{
+                'collection' => collectionName,
+                'lot' => lotNumber
+            };
+            HttpRequest searchReq = PropertySearchHttp.buildGet(searchEndpoint, searchQp, apiKey, 30000);
+            HttpResponse searchRes = PropertySearchHttp.send(searchReq);
+            System.debug('Lot search URL: ' + searchReq.getEndpoint());
+            System.debug('Lot search status: ' + (searchRes == null ? -1 : searchRes.getStatusCode()));
+            System.debug('Lot search body: ' + (searchRes == null ? 'null' : searchRes.getBody()));
+            String searchBody = PropertySearchHttp.getBodyIfOk(searchRes);
+            if (searchBody == null) {
+                System.debug('Lot search returned non-200 or null');
+                return null;
+            }
+
+            String documentId = extractDocumentId(searchRes.getBody());
+            if (String.isBlank(documentId)) {
+                System.debug('No document ID found for lot search');
+                return null;
+            }
+
+            // Étape 2: récupérer le document complet
+            String documentEndpoint = API_BASE_URL + '/document/' + documentId;
+            Map<String, String> docQp = new Map<String, String>{ 'collection' => collectionName };
+            HttpRequest documentReq = PropertySearchHttp.buildGet(documentEndpoint, docQp, apiKey, 30000);
+            HttpResponse documentRes = PropertySearchHttp.send(documentReq);
+            System.debug('Lot document status: ' + (documentRes == null ? -1 : documentRes.getStatusCode()));
+            System.debug('Lot document body: ' + (documentRes == null ? 'null' : documentRes.getBody()));
+            String docBody = PropertySearchHttp.getBodyIfOk(documentRes);
+            if (docBody == null) {
+                System.debug('Lot document fetch returned non-200 or null');
+                return null;
+            }
+
+            Map<String, Object> document = parseCompletePropertyDetails(docBody);
+            System.debug('=== AddressSearchController.searchByLot END ===');
+            return document;
+        } catch (Exception e) {
+            System.debug('Exception in searchByLot: ' + e.getMessage());
+            System.debug('Stack trace: ' + e.getStackTraceString());
+            return null;
+        }
+    }
+
+    /**
+     * Recherche d'une propriété par numéro de matricule
+     * Retourne le document MongoDB complet (même forme que la recherche adresse)
+     */
+    @AuraEnabled(cacheable=true)
+    public static Map<String, Object> searchByMatricule(String apiKey, String municipalityCode, String matriculeNumber) {
+        try {
+            System.debug('=== AddressSearchController.searchByMatricule START ===');
+            if (String.isBlank(apiKey)) {
+                System.debug('Missing API key, returning null');
+                return null;
+            }
+            // Déterminer la collection à partir du code municipalité
+            String collectionName = getCollectionName(municipalityCode);
+            if (String.isBlank(collectionName)) {
+                System.debug('Unsupported municipality: ' + municipalityCode);
+                return null;
+            }
+            if (String.isBlank(matriculeNumber)) {
+                System.debug('Missing matriculeNumber, returning null');
+                return null;
+            }
+
+            // Étape 1: rechercher par matricule pour obtenir l'_id
+            String searchEndpoint = API_BASE_URL + '/search-full-address';
+            Map<String, String> searchQp = new Map<String, String>{
+                'collection' => collectionName,
+                'matricule' => matriculeNumber
+            };
+            HttpRequest searchReq = PropertySearchHttp.buildGet(searchEndpoint, searchQp, apiKey, 30000);
+            HttpResponse searchRes = PropertySearchHttp.send(searchReq);
+            System.debug('Matricule search URL: ' + searchReq.getEndpoint());
+            System.debug('Matricule search status: ' + (searchRes == null ? -1 : searchRes.getStatusCode()));
+            System.debug('Matricule search body: ' + (searchRes == null ? 'null' : searchRes.getBody()));
+            String searchBody = PropertySearchHttp.getBodyIfOk(searchRes);
+            if (searchBody == null) {
+                System.debug('Matricule search returned non-200 or null');
+                return null;
+            }
+
+            String documentId = extractDocumentId(searchRes.getBody());
+            if (String.isBlank(documentId)) {
+                System.debug('No document ID found for matricule search');
+                return null;
+            }
+
+            // Étape 2: récupérer le document complet
+            String documentEndpoint = API_BASE_URL + '/document/' + documentId;
+            Map<String, String> docQp = new Map<String, String>{ 'collection' => collectionName };
+            HttpRequest documentReq = PropertySearchHttp.buildGet(documentEndpoint, docQp, apiKey, 30000);
+            HttpResponse documentRes = PropertySearchHttp.send(documentReq);
+            System.debug('Matricule document status: ' + (documentRes == null ? -1 : documentRes.getStatusCode()));
+            System.debug('Matricule document body: ' + (documentRes == null ? 'null' : documentRes.getBody()));
+            String docBody = PropertySearchHttp.getBodyIfOk(documentRes);
+            if (docBody == null) {
+                System.debug('Matricule document fetch returned non-200 or null');
+                return null;
+            }
+
+            Map<String, Object> document = parseCompletePropertyDetails(docBody);
+            System.debug('=== AddressSearchController.searchByMatricule END ===');
+            return document;
+        } catch (Exception e) {
+            System.debug('Exception in searchByMatricule: ' + e.getMessage());
+            System.debug('Stack trace: ' + e.getStackTraceString());
+            return null;
+        }
+    }
     
     /**
      * Extraction du numéro civique depuis un document MongoDB
@@ -909,234 +985,13 @@ public with sharing class AddressSearchController {
         return testNumbers;
     }
     
-    /**
-     * Parsing sécurisé des détails de propriété depuis la réponse JSON
-     * @param jsonResponse La réponse JSON de l'API
-     * @return Détails de la propriété
-     */
-    /*
-    private static PropertyDetails parsePropertyDetails(String jsonResponse) {
-        try {
-            if (String.isBlank(jsonResponse)) {
-                System.debug('Empty JSON response');
-                return null;
-            }
-            
-            // Parsing du JSON principal
-            Object jsonObj = JSON.deserializeUntyped(jsonResponse);
-            
-            // L'API retourne un tableau d'objets MongoDB
-            if (jsonObj instanceof List<Object>) {
-                List<Object> documents = (List<Object>) jsonObj;
-                System.debug('Documents array size: ' + documents.size());
-                
-                if (documents.isEmpty()) {
-                    System.debug('No documents found');
-                    return null;
-                }
-                
-                // Prendre le premier document
-                Object firstDoc = documents[0];
-                if (!(firstDoc instanceof Map<String, Object>)) {
-                    System.debug('First document is not a Map');
-                    return null;
-                }
-                
-                Map<String, Object> document = (Map<String, Object>) firstDoc;
-                System.debug('Document keys: ' + document.keySet());
-                
-                // ✅ NOUVEAU : Extraction des informations générales du document racine
-                PropertyDetails details = new PropertyDetails();
-                details.roleYear = String.valueOf(document.get('RLM02A')); // Année du rôle
-                details.municipalityCode = String.valueOf(document.get('RLM01A')); // Code municipalité
-                details.version = String.valueOf(document.get('VERSION')); // Version
-                
-                System.debug('General info - Role Year: ' + details.roleYear);
-                System.debug('General info - Municipality Code: ' + details.municipalityCode);
-                System.debug('General info - Version: ' + details.version);
-                
-                // Extraction de RLUEx
-                Object rluexObj = document.get('RLUEx');
-                if (!(rluexObj instanceof Map<String, Object>)) {
-                    System.debug('RLUEx is not a Map');
-                    return null;
-                }
-                Map<String, Object> rluex = (Map<String, Object>) rluexObj;
-                
-                // ✅ MODIFIÉ : Extraction des données d'adresse (RL0101) et fusion avec details existant
-                PropertyDetails addressData = extractAddressData(rluex);
-                if (addressData == null) {
-                    System.debug('Failed to extract address data');
-                    return null;
-                }
-                
-                // Fusionner les données d'adresse avec details existant
-                details.streetNumber = addressData.streetNumber;
-                details.streetName = addressData.streetName;
-                details.streetType = addressData.streetType;
-                details.postalCode = addressData.postalCode;
-                details.fullAddress = addressData.fullAddress;
-                
-                // Extraction des données de propriétaire (RL0201)
-                extractOwnerData(rluex, details);
-                
-                // Extraction des valeurs (RL0401-05)
-                extractValueData(rluex, details);
-                
-                System.debug('Extracted property details: ' + details);
-                return details;
-                
-            } else {
-                System.debug('JSON root is not a List');
-                return null;
-            }
-            
-        } catch (Exception e) {
-            System.debug('Exception in parsePropertyDetails: ' + e.getMessage());
-            System.debug('Stack trace: ' + e.getStackTraceString());
-            return null;
-        }
-    }
-    */
+
     
-    /**
-     * Extraction des données d'adresse depuis RL0101
-     * @param rluex L'objet RLUEx
-     * @return Détails de propriété avec les données d'adresse
-     */
-    /*
-    private static PropertyDetails extractAddressData(Map<String, Object> rluex) {
-        try {
-            Object rl0101Obj = rluex.get('RL0101');
-            if (!(rl0101Obj instanceof Map<String, Object>)) {
-                System.debug('RL0101 is not a Map');
-                return null;
-            }
-            Map<String, Object> rl0101 = (Map<String, Object>) rl0101Obj;
-            
-            Object rl0101xObj = rl0101.get('RL0101x');
-            if (!(rl0101xObj instanceof Map<String, Object>)) {
-                System.debug('RL0101x is not a Map');
-                return null;
-            }
-            Map<String, Object> addressData = (Map<String, Object>) rl0101xObj;
-            
-            PropertyDetails details = new PropertyDetails();
-            
-            String streetNumber = String.valueOf(addressData.get('RL0101Ax'));
-            String streetType = String.valueOf(addressData.get('RL0101Ex'));
-            String streetName = String.valueOf(addressData.get('RL0101Gx'));
-            String postalCode = String.valueOf(addressData.get('POSTALCODE'));
-            
-            details.streetNumber = streetNumber;
-            details.streetName = streetName;
-            details.streetType = streetType;
-            details.postalCode = postalCode;
-            details.fullAddress = streetNumber + ' ' + streetType + ' ' + streetName;
-            
-            return details;
-            
-        } catch (Exception e) {
-            System.debug('Exception in extractAddressData: ' + e.getMessage());
-            return null;
-        }
-    }
-    */
+
     
-    /**
-     * Extraction des données de propriétaire depuis RL0201
-     * @param rluex L'objet RLUEx
-     * @param details Les détails de propriété à compléter
-     */
-    /*
-    private static void extractOwnerData(Map<String, Object> rluex, PropertyDetails details) {
-        try {
-            Object rl0201Obj = rluex.get('RL0201');
-            if (!(rl0201Obj instanceof Map<String, Object>)) {
-                System.debug('RL0201 is not a Map');
-                return;
-            }
-            Map<String, Object> rl0201 = (Map<String, Object>) rl0201Obj;
-            
-            Object rl0201xObj = rl0201.get('RL0201x');
-            if (!(rl0201xObj instanceof Map<String, Object>)) {
-                System.debug('RL0201x is not a Map');
-                return;
-            }
-            Map<String, Object> ownerData = (Map<String, Object>) rl0201xObj;
-            
-            String ownerName = String.valueOf(ownerData.get('RL0201Ax'));
-            String city = String.valueOf(ownerData.get('RL0201Dx'));
-            String ownerPostalCode = String.valueOf(ownerData.get('RL0201Ex'));
-            String acquisitionDate = String.valueOf(ownerData.get('RL0201Gx'));
-            
-            details.ownerName = ownerName;
-            details.ownerCity = city;
-            details.ownerPostalCode = ownerPostalCode;
-            details.acquisitionDate = acquisitionDate;
-            
-        } catch (Exception e) {
-            System.debug('Exception in extractOwnerData: ' + e.getMessage());
-        }
-    }
-    */
+
     
-    /**
-     * Extraction des valeurs de propriété depuis RL0401-05
-     * @param rluex L'objet RLUEx
-     * @param details Les détails de propriété à compléter
-     */
-    /*
-    private static void extractValueData(Map<String, Object> rluex, PropertyDetails details) {
-        try {
-            String landValue = String.valueOf(rluex.get('RL0402A'));
-            String buildingValue = String.valueOf(rluex.get('RL0403A'));
-            String totalValue = String.valueOf(rluex.get('RL0404A'));
-            String taxableValue = String.valueOf(rluex.get('RL0405A'));
-            String evaluationDate = String.valueOf(rluex.get('RL0401A'));
-            
-            details.landValue = landValue;
-            details.buildingValue = buildingValue;
-            details.totalValue = totalValue;
-            details.taxableValue = taxableValue;
-            details.evaluationDate = evaluationDate;
-            
-        } catch (Exception e) {
-            System.debug('Exception in extractValueData: ' + e.getMessage());
-        }
-    }
-    */
+
     
-    /**
-     * Classe pour représenter les détails d'une propriété
-     * NOTE: Cette classe n'est plus utilisée car nous retournons maintenant le document MongoDB complet
-     */
-    /*
-    public class PropertyDetails {
-        // 📍 Adresse
-        @AuraEnabled public String streetNumber;
-        @AuraEnabled public String streetName;
-        @AuraEnabled public String streetType;
-        @AuraEnabled public String postalCode;
-        @AuraEnabled public String fullAddress;
-        
-        // 👤 Propriétaire
-        @AuraEnabled public String ownerName;
-        @AuraEnabled public String ownerCity;
-        @AuraEnabled public String ownerPostalCode;
-        @AuraEnabled public String acquisitionDate;
-        
-        // 💰 Valeurs
-        @AuraEnabled public String landValue;
-        @AuraEnabled public String buildingValue;
-        @AuraEnabled public String totalValue;
-        @AuraEnabled public String taxableValue;
-        @AuraEnabled public String evaluationDate;
-        
-        // 📅 Informations générales
-        @AuraEnabled public String roleYear;
-        @AuraEnabled public String municipalityCode;
-        @AuraEnabled public String version;
-    }
-    */
+
 } 

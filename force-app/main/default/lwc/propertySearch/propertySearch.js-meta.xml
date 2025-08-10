@@ -21,6 +21,20 @@
                       description="Clé API pour accéder aux données de propriétés québécoises"/>
             <property name="defaultMunicipality" type="String"
                       description="Municipalité sélectionnée par défaut"/>
+            <property name="selectedPropertyId" type="String"
+                      description="ID de la propriété sélectionnée"/>
+            <property name="selectedPropertyFullAddress" type="String"
+                      description="Adresse complète de la propriété sélectionnée"/>
+            <property name="selectedPropertyOwnerName" type="String"
+                      description="Nom du propriétaire de la propriété sélectionnée"/>
+            <property name="selectedPropertyAssessedValue" type="String"
+                      description="Valeur évaluée de la propriété sélectionnée"/>
+            <property name="selectedPropertyPostalCode" type="String"
+                      description="Code postal de la propriété sélectionnée"/>
+            <property name="selectedPropertyMatricule" type="String"
+                      description="Matricule de la propriété sélectionnée"/>
+            <property name="selectedPropertyData" type="String"
+                      description="Données complètes de la propriété sélectionnée au format JSON"/>
         </targetConfig>
     </targetConfigs>
 </LightningComponentBundle>
