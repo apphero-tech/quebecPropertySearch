@@ -6,6 +6,24 @@ Ce projet fournit un composant Lightning Web Component (LWC) **v2.0** pour reche
 
 **🚀 NOUVELLE VERSION 2.0** : Mapping MongoDB complet + Recherche par Propriétaire
 
+## 🏢 **Orgs déployés**
+
+### **Eva-Jer (Org principal)**
+- **Alias** : `Eva-Jer`
+- **Username** : `eva-dev_jerome@apphero.tech`
+- **Org ID** : `00Da500001MCkxgEAD`
+- **Instance** : `https://d5h00000mcqxgeac.develop.my.salesforce.com`
+- **API Version** : 60.0
+- **Statut** : ✅ Déployé et opérationnel
+
+### **DEVALFA (Org secondaire)**
+- **Alias** : `DEVALFA`
+- **Username** : `alfa_jerome@apphero.tech`
+- **Org ID** : `00Dau00000866HREAY`
+- **Instance** : `https://alfa2-dev-ed.develop.my.salesforce.com`
+- **API Version** : 64.0
+- **Statut** : ✅ Déployé et opérationnel
+
 ## État actuel (source de vérité)
 
 - LWC principal: `force-app/main/default/lwc/propertySearch/`
@@ -72,17 +90,30 @@ Propriétés exposées dans `propertySearch.js-meta.xml`:
 
 ## 🚀 Déploiement
 
-**Prérequis**: Salesforce CLI (sf), accès à un org (par défaut: alias `Eva-Jer`).
+**Prérequis**: Salesforce CLI (sf), accès à un org.
 
-### Déployer tout le projet:
+### **Déployer sur Eva-Jer (org principal)**
 ```bash
+# Déployer tout le projet
 sf project deploy start --source-dir force-app/main/default
-```
 
-### Déployer uniquement le composant LWC:
-```bash
+# Déployer uniquement le composant LWC
 sf project deploy start --source-dir force-app/main/default/lwc/propertySearch
 ```
+
+### **Déployer sur DEVALFA**
+```bash
+# Déployer les classes Apex d'abord
+sf project deploy start --source-dir force-app/main/default/classes --target-org DEVALFA
+
+# Puis déployer le composant LWC
+sf project deploy start --source-dir force-app/main/default/lwc/propertySearch --target-org DEVALFA
+
+# Enfin, déployer les Remote Site Settings
+sf project deploy start --source-dir force-app/main/default/remoteSiteSettings --target-org DEVALFA
+```
+
+**Note importante** : Sur DEVALFA, il faut déployer dans l'ordre : Classes Apex → LWC → Remote Site Settings.
 
 Le composant est disponible sur App Builder (App, Home, Record) et Tab.
 
@@ -214,6 +245,19 @@ Projet interne. Documentation générée à partir de l'état actuel du code et 
 
 ---
 
-**🚀 Déployé avec succès sur org : `eva-dev_jerome@apphero.tech`**
-**📦 Deploy ID : `0Afa500002OkoKjCAJ`**
-**⏱️ Temps de déploiement : 2.71 secondes**
+## 🚀 **Résumé des déploiements**
+
+### **Eva-Jer (Org principal)**
+- **Deploy ID** : `0Afa500002OkoKjCAJ`
+- **Temps de déploiement** : 2.71 secondes
+- **Statut** : ✅ Déployé et opérationnel
+
+### **DEVALFA (Org secondaire)**
+- **Deploy IDs** : 
+  - Classes Apex : `0Afau000005B893CAC`
+  - Composant LWC : `0Afau000005B8AfCAK`
+  - Remote Site Settings : `0Afau000005B8CHCA0`
+- **Temps total** : 4.97 secondes
+- **Statut** : ✅ Déployé et opérationnel
+
+**Les deux orgs sont maintenant synchronisés avec la version 2.0.0 complète !** 🎉
