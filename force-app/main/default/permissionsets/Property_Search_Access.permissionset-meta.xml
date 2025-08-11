@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>Property Search Access</label>
+    <description>Accès complet à l'application Property Search et tous ses composants</description>
+    
+    <!-- ACCÈS AUX APPLICATIONS -->
+    <applicationVisibilities>
+        <application>Property_Search_App</application>
+        <visible>true</visible>
+    </applicationVisibilities>
+    
+    <!-- VISIBILITÉ DES ONGLETS -->
+    <tabSettings>
+        <tab>Assessment__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Property__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Owner__c</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    
+    <!-- PERMISSIONS OBJETS CRUD -->
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Assessment__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Property__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Owner__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    
+    <!-- PERMISSIONS CHAMPS (tous les champs accessibles) -->
+    <!-- Note: Salesforce donne accès aux champs standard par défaut -->
+    <!-- Ajouter des fieldPermissions spécifiques si nécessaire -->
+    
+</PermissionSet>
