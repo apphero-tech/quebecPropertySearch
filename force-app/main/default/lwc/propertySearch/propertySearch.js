@@ -1,6 +1,7 @@
 import { LightningElement, track, api } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { FlowAttributeChangeEvent } from 'lightning/flowSupport';
+import { NavigationMixin } from 'lightning/navigation';
 
 // Imports Apex (méthodes fonctionnelles)
 import getAvailableCollections from '@salesforce/apex/AddressSearchController.getAvailableCollections';
@@ -12,7 +13,7 @@ import searchByLot from '@salesforce/apex/AddressSearchController.searchByLot';
 import searchByMatricule from '@salesforce/apex/AddressSearchController.searchByMatricule';
 import saveCompleteProperty from '@salesforce/apex/AddressSearchController.saveCompleteProperty';
 
-export default class PropertySearch extends LightningElement {
+export default class PropertySearch extends NavigationMixin(LightningElement) {
     
     // Paramètres configurables
     @api apiKey;
@@ -61,6 +62,96 @@ export default class PropertySearch extends LightningElement {
     streetSearchTimeout;
     // Timer suggestions propriétaire
     ownerSearchTimeout;
+    // Retourne la première valeur non vide et non placeholder ("Non disponible", "Inconnu")
+    preferValue(...values) {
+        for (const v of values) {
+            if (v === undefined || v === null) continue;
+            const s = String(v).trim();
+            if (!s) continue;
+            const lower = s.toLowerCase();
+            if (lower === 'non disponible' || lower === 'inconnu' || lower === 'n/a' || s === '-') continue;
+            return v;
+        }
+        return '';
+    }
+
+    /**
+     * Extraction directe depuis le DOM visible (principe: "lis ce que tu vois")
+     * - Adresse (titre carte / entête)
+     * - Nom propriétaire (premier nom affiché en Section 2)
+     * - Matricule (span data-field="matricule" ou libellé)
+     * - Valeur totale (span data-field="total-value" ou libellé)
+     * - Code postal (libellé)
+     */
+    extractDataFromDOM() {
+        const getText = (el) => (el && typeof el.textContent === 'string') ? el.textContent.trim() : '';
+
+        // Helper: trouver la valeur après un <strong>Label :</strong>
+        const queryLabeledValue = (labelText) => {
+            try {
+                const paragraphs = this.template.querySelectorAll('p');
+                for (const p of paragraphs) {
+                    const strong = p.querySelector('strong');
+                    if (strong) {
+                        const label = (strong.textContent || '').replace(/\s+/g, ' ').trim();
+                        const normalizedLabel = label.replace(/\s*:\s*$/, '').toLowerCase();
+                        if (normalizedLabel === (labelText || '').toLowerCase()) {
+                            // Retourner le texte du paragraphe sans le label
+                            const raw = (p.textContent || '').trim();
+                            const withoutLabel = raw.replace(new RegExp('^\n?\s*' + label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*'), '').trim();
+                            return withoutLabel;
+                        }
+                    }
+                }
+            } catch (e) {
+                // no-op
+            }
+            return '';
+        };
+
+        // Adresse: privilégier l'en-tête principal, sinon le bloc "Adresse de la propriété"
+        const addressMain = this.template.querySelector('.slds-text-heading_medium');
+        let address = getText(addressMain);
+        if (!address) {
+            const addressAlt = this.template.querySelector('p.slds-text-heading_small.slds-m-bottom_x-small');
+            address = getText(addressAlt);
+        }
+
+        // Nom propriétaire: Section 2, premier <strong> dans un paragraphe de classe régulière
+        let ownerName = '';
+        try {
+            const ownerSection = this.template.querySelector('lightning-accordion-section[name="section2"]');
+            const ownerStrong = ownerSection ? ownerSection.querySelector('.slds-text-body_regular strong') : null;
+            ownerName = getText(ownerStrong);
+            if (!ownerName) {
+                const anyOwner = this.template.querySelector('.slds-text-body_regular strong');
+                ownerName = getText(anyOwner);
+            }
+        } catch (e) {
+            // no-op
+        }
+
+        // Matricule: data-field si présent, sinon par libellé "Matricule"
+        let matricule = '';
+        try {
+            const matriculeEl = this.template.querySelector('[data-field="matricule"]');
+            matricule = getText(matriculeEl) || queryLabeledValue('Matricule');
+        } catch (e) { /* no-op */ }
+
+        // Valeur totale: data-field si présent, sinon par libellé
+        let totalValue = '';
+        try {
+            const totalValueEl = this.template.querySelector('[data-field="total-value"]');
+            totalValue = getText(totalValueEl) || queryLabeledValue("Valeur totale de l'immeuble inscrite au rôle");
+        } catch (e) { /* no-op */ }
+
+        // Code postal: par libellé "Code postal"
+        const postalCode = queryLabeledValue('Code postal');
+
+        const extracted = { address, ownerName, matricule, totalValue, postalCode };
+        console.log('extractDataFromDOM:', JSON.stringify(extracted));
+        return extracted;
+    }
     
     connectedCallback() {
         // Initialiser la municipalité sélectionnée avec la valeur par défaut
@@ -615,14 +706,207 @@ export default class PropertySearch extends LightningElement {
      */
     handleSaveAssessment() {
         console.log('Save Assessment clicked');
+        console.log('=== DEBUG COMPLET ===');
+        console.log('this.properties:', this.properties);
+        console.log('this.properties length:', this.properties ? this.properties.length : 'null');
+        console.log('this.showPropertyDetails:', this.showPropertyDetails);
+        console.log('this.selectedPropertyData:', this.selectedPropertyData);
+        console.log('this.propertyDetails:', this.propertyDetails);
+        try {
+            const sections = this.template.querySelectorAll('lightning-accordion-section');
+            console.log('Sections accordion trouvées:', sections ? sections.length : 0);
+        } catch (e) {
+            console.log('Erreur inspection DOM:', e && e.message ? e.message : e);
+        }
+        // Debug des éléments DOM
+        try {
+            const matriculeElement = this.template.querySelector('[data-field="matricule"]');
+            const totalValueElement = this.template.querySelector('[data-field="total-value"]');
+
+            console.log('Matricule element trouvé:', matriculeElement);
+            console.log('Matricule textContent:', matriculeElement ? matriculeElement.textContent : undefined);
+            console.log('Total value element trouvé:', totalValueElement);
+            console.log('Total value textContent:', totalValueElement ? totalValueElement.textContent : undefined);
+
+            // Vérifier tous les spans data-field
+            const allDataFields = this.template.querySelectorAll('[data-field]');
+            console.log('Tous les data-field trouvés:', allDataFields ? allDataFields.length : 0);
+            allDataFields.forEach(el => {
+                try {
+                    console.log(`data-field="${el.dataset.field}": "${el.textContent}"`);
+                } catch (inner) {
+                    console.log('Erreur lecture data-field:', inner && inner.message ? inner.message : inner);
+                }
+            });
+        } catch (e) {
+            console.log('Erreur debug data-field:', e && e.message ? e.message : e);
+        }
+        // Debug avancé pour localiser la source des données complètes
+        try {
+            console.log('properties[0] keys:', Object.keys((this.properties && this.properties[0]) ? this.properties[0] : {}));
+            console.log('properties[0] spread:', { ...((this.properties && this.properties[0]) ? this.properties[0] : {}) });
+        } catch (e) {
+            console.log('Erreur spread/keys properties[0]:', e && e.message ? e.message : e);
+        }
+        try {
+            const allProps = Object.getOwnPropertyNames(this);
+            console.log('Toutes les propriétés du composant:', allProps);
+            allProps.forEach(prop => {
+                try {
+                    const value = this[prop];
+                    const str = value ? JSON.stringify(value) : '';
+                    if (str && (str.includes('BRIEN') || str.includes('RITA'))) {
+                        console.log('Trouvé BRIEN/RITA dans:', prop, value);
+                    }
+                } catch (inner) {
+                    // ignorer erreurs de sérialisation
+                }
+            });
+        } catch (e) {
+            console.log('Erreur introspection propriétés composant:', e && e.message ? e.message : e);
+        }
+        console.log('this.rawData:', this.rawData);
+        console.log('this.mongoData:', this.mongoData);
+        console.log('this.currentProperty:', this.currentProperty);
         
-        saveCompleteProperty({ mongoData: JSON.stringify(this.properties) })
+        // Lecture directe du DOM visible (sans modifier la logique de sauvegarde existante)
+        try {
+            const domData = this.extractDataFromDOM();
+            console.log('DOM data snapshot (non-bloquant):', domData);
+        } catch (e) {
+            console.log('Erreur extractDataFromDOM:', e && e.message ? e.message : e);
+        }
+        
+        if (!this.selectedPropertyData) {
+            this.dispatchEvent(new ShowToastEvent({
+                title: 'Erreur',
+                message: 'Aucune propriété sélectionnée',
+                variant: 'error'
+            }));
+            return;
+        }
+        console.log('selectedPropertyData:', JSON.stringify(this.selectedPropertyData, null, 2));
+        const sp = typeof this.selectedPropertyData === 'string'
+            ? JSON.parse(this.selectedPropertyData)
+            : (this.selectedPropertyData || {});
+        const p0 = (this.properties && this.properties[0]) ? this.properties[0] : undefined;
+        const firstOwnerName = p0 && Array.isArray(p0.owners) && p0.owners.length > 0 ? p0.owners[0].fullName : undefined;
+        // Dernier recours: dériver une valeur totale à partir des composantes terrain/bâtiment
+        let derivedTotalValue;
+        try {
+            const tryParse = (v) => {
+                if (v === undefined || v === null) return undefined;
+                const s = String(v).replace(/[^0-9.,-]/g, '').replace(',', '.');
+                const num = parseFloat(s);
+                return Number.isFinite(num) ? num : undefined;
+            };
+            const vTerrain = p0 ? tryParse(p0.rl0402A) : undefined;
+            const vBatiment = p0 ? tryParse(p0.rl0403A) : undefined;
+            if (vTerrain !== undefined || vBatiment !== undefined) {
+                const sum = (vTerrain || 0) + (vBatiment || 0);
+                derivedTotalValue = sum > 0 ? String(sum) : undefined;
+            }
+        } catch (e) {
+            // no-op
+        }
+        // Fallback DOM: lire le matricule et la valeur totale affichés si présents
+        try {
+            const matriculeEl = this.template.querySelector('[data-field="matricule"]');
+            const totalValueEl = this.template.querySelector('[data-field="total-value"]');
+            const domMatricule = matriculeEl ? matriculeEl.textContent.trim() : undefined;
+            const domTotalValueRaw = totalValueEl ? totalValueEl.textContent.trim() : undefined;
+            const parsedDomTotal = (() => {
+                if (!domTotalValueRaw) return undefined;
+                const s = domTotalValueRaw.replace(/[^0-9.,-]/g, '').replace(',', '.');
+                const n = parseFloat(s);
+                return Number.isFinite(n) ? String(n) : undefined;
+            })();
+            if (domMatricule) {
+                // Injecter en dernier fallback via variables locales utilisées plus bas
+                // On n’écrase rien ici, on utilisera preferValue plus bas
+                derivedTotalValue = this.preferValue(derivedTotalValue, parsedDomTotal);
+                // Stocker pour reuse dans preferValue plus bas via variables locales
+                var domMatriculeValue = domMatricule;
+                var domTotalValueValue = parsedDomTotal;
+            }
+        } catch (e) {
+            // no-op DOM
+        }
+        const propertyToSave = {
+            // Priorité: données normalisées (sp.*) -> attributs Flow exposés -> données brutes du résultat -> dérivés
+            matricule: this.preferValue(
+                sp.matricule,
+                this.selectedPropertyMatricule,
+                p0 ? p0.rl0106A : undefined,
+                this.matriculeInput,
+                typeof domMatriculeValue !== 'undefined' ? domMatriculeValue : undefined
+            ),
+            address: this.preferValue(
+                sp.fullAddress,
+                this.selectedPropertyFullAddress,
+                p0 ? p0.fullAddress : undefined
+            ),
+            ownerName: this.preferValue(
+                sp.ownerName,
+                this.selectedPropertyOwnerName,
+                p0 ? p0.rl0201Ax : undefined,
+                firstOwnerName
+            ) || 'Propriétaire non défini',
+            totalValue: this.preferValue(
+                sp.assessedValue,
+                this.selectedPropertyAssessedValue,
+                p0 ? p0.rl0404A : undefined,
+                p0 ? p0.rl0413A : undefined,
+                p0 ? p0.rl0415A : undefined,
+                derivedTotalValue,
+                typeof domTotalValueValue !== 'undefined' ? domTotalValueValue : undefined
+            ),
+            postalCode: this.preferValue(
+                sp.postalCode,
+                this.selectedPropertyPostalCode,
+                p0 ? p0.postalCode : undefined
+            )
+        };
+        console.log('propertyToSave final:', JSON.stringify(propertyToSave, null, 2));
+
+        saveCompleteProperty({ propertyData: JSON.stringify(propertyToSave) })
             .then((result) => {
-                this.dispatchEvent(new ShowToastEvent({
-                    title: 'Sauvegarde réussie',
-                    message: 'Assessment sauvegardé: ' + result,
-                    variant: 'success'
-                }));
+                let assessmentId;
+                try {
+                    const parsedResult = typeof result === 'string' ? JSON.parse(result) : result;
+                    assessmentId = parsedResult && parsedResult.assessmentId;
+                } catch (e) {
+                    // parsing failed; continue with basic toast
+                }
+                
+                if (assessmentId) {
+                    // Generate a standard record URL and include it as a clickable link in the toast
+                    this[NavigationMixin.GenerateUrl]({
+                        type: 'standard__recordPage',
+                        attributes: {
+                            recordId: assessmentId,
+                            objectApiName: 'Assessment__c',
+                            actionName: 'view'
+                        }
+                    }).then((url) => {
+                        const evt = new ShowToastEvent({
+                            title: 'Succès',
+                            message: `Évaluation sauvegardée ! ID: ${assessmentId} — {0}`,
+                            messageData: [
+                                { url: url, label: "Voir l'évaluation" }
+                            ],
+                            variant: 'success',
+                            mode: 'sticky'
+                        });
+                        this.dispatchEvent(evt);
+                    }).catch(() => {
+                        // Fallback toast without link
+                        this.showToast('Succès', `Évaluation sauvegardée ! ID: ${assessmentId}`,'success');
+                    });
+                    this.lastAssessmentId = assessmentId;
+                } else {
+                    this.showToast('Succès', 'Évaluation sauvegardée !','success');
+                }
             })
             .catch((error) => {
                 this.dispatchEvent(new ShowToastEvent({
@@ -897,7 +1181,7 @@ export default class PropertySearch extends LightningElement {
                 ...this.formatCanadaPostAddress(mongoData),
                 
                 // === SECTION 1 : IDENTIFICATION DE L'UNITÉ D'ÉVALUATION ===
-                ...this.extractIdentificationInfo(extractedData.rl0101x, extractedData.rl0103x, extractedData.rl0104, mongoData),
+                ...this.extractIdentificationInfo(extractedData.rl0101x, extractedData.rl0103x, extractedData.rl0104, extractedData.rluex),
                 
                 // === SECTION 2 : IDENTIFICATION DU PROPRIÉTAIRE ===
                 // Traitement des propriétaires avec TOUS les champs MongoDB
@@ -907,7 +1191,7 @@ export default class PropertySearch extends LightningElement {
                 ...this.extractCharacteristicsInfo(mongoData),
                 
                 // === SECTION 4 : VALEURS ET ÉVALUATION ===
-                ...this.extractValuationInfo(mongoData),
+                ...this.extractValuationInfo(extractedData.rluex),
                 
                 // === SECTION 5 : RENSEIGNEMENTS ANNEXABLES ===
                 ...this.extractAnnexableInfo(extractedData.rl0504x, extractedData.annexesUnite, extractedData.annexesGlobal),
@@ -918,6 +1202,7 @@ export default class PropertySearch extends LightningElement {
                 // === SECTION 7 : SECTIONS SPÉCIALES RLZU ===
                 ...this.extractSpecialSections(extractedData.rlzu3001, extractedData.rlzu5001)
             };
+            console.log('DEBUG mapping rl0106A (matricule)=', property.rl0106A, 'rl0404A (valeur totale)=', property.rl0404A);
             
             // Mettre à jour l'interface utilisateur
             this.updateUIWithProperty(property);
@@ -956,8 +1241,9 @@ export default class PropertySearch extends LightningElement {
         const rlzu5001 = annexesGlobal.RLZU5001 || {};
         
         return {
-            rl0101x, rl0103x, rl0104, rl0201x, rl0201, 
-            rl0502, rl0503, rl0504x, 
+            rluex,
+            rl0101x, rl0103x, rl0104, rl0201x, rl0201,
+            rl0502, rl0503, rl0504x,
             annexesUnite, annexesGlobal, rlzu3001, rlzu5001
         };
     }
@@ -966,7 +1252,12 @@ export default class PropertySearch extends LightningElement {
      * Mise à jour de l'interface utilisateur avec la propriété
      */
     updateUIWithProperty(property) {
+        console.log('DEBUG before UI assign rl0106A=', property.rl0106A, 'rl0404A=', property.rl0404A);
         this.properties = [property];
+        try {
+            console.log('DEBUG after UI assign rl0106A=', this.properties && this.properties[0] ? this.properties[0].rl0106A : undefined,
+                        'rl0404A=', this.properties && this.properties[0] ? this.properties[0].rl0404A : undefined);
+        } catch (e) {}
         this.showPropertyDetails = true;
         this.showNoResults = false;
         
@@ -1551,6 +1842,8 @@ export default class PropertySearch extends LightningElement {
     showErrorToast(message) {
         this.showToast('Erreur', message, 'error');
     }
+    
+    
     
     /**
      * Getters pour les variantes des boutons

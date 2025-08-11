@@ -32,20 +32,7 @@ public with sharing class PropertySearchHttp {
         return req;
     }
 
-    /**
-     * Builds a GET HttpRequest from a fully constructed URL.
-     */
-    public static HttpRequest buildGetFromFullUrl(String fullUrl, String apiKey, Integer timeoutMs) {
-        HttpRequest req = new HttpRequest();
-        req.setEndpoint(fullUrl);
-        req.setMethod('GET');
-        if (isValidApiKey(apiKey)) {
-            req.setHeader('x-api-key', apiKey);
-        }
-        req.setHeader('Content-Type', 'application/json');
-        req.setTimeout(timeoutMs != null ? timeoutMs : 30000);
-        return req;
-    }
+    
 
     /**
      * Sends the request and returns the response or null on exception.
