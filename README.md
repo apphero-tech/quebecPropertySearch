@@ -24,6 +24,12 @@ Ce projet fournit un composant Lightning Web Component (LWC) **v2.0** pour reche
 - **API Version** : 64.0
 - **Statut** : ✅ Déployé et opérationnel
 
+### **MyDevOrg (Org secondaire)**
+- **Alias** : `MyDevOrg`
+- **Username** : `jerome435@agentforce.com`
+- **API Version** : 64.0
+- **Statut** : ✅ Déployé et opérationnel
+
 ## État actuel (source de vérité)
 
 - LWC principal: `force-app/main/default/lwc/propertySearch/`
@@ -55,6 +61,8 @@ Ce projet fournit un composant Lightning Web Component (LWC) **v2.0** pour reche
 - **Libellés explicites** pour les statuts et conditions
 - **Gestion robuste** des propriétaires multiples
 - **Interface utilisateur enrichie** avec toutes les données disponibles
+- **Cartes propriétaires mono-colonne** (stack) pour une meilleure lisibilité
+- **Sections 3–8** en encarts plats SLDS, champs vides masqués, traductions ciblées
 
 ### ✅ **Fonctionnalités existantes maintenues**
 - **Recherche par Adresse** (Voie publique + Numéro civique)
@@ -103,17 +111,29 @@ sf project deploy start --source-dir force-app/main/default/lwc/propertySearch
 
 ### **Déployer sur DEVALFA**
 ```bash
-# Déployer les classes Apex d'abord
+# Ordre recommandé (full): Objects -> Apex -> LWC -> Tabs -> Application -> Remote Site (optionnel)
+sf project deploy start --source-dir force-app/main/default/objects --target-org DEVALFA
 sf project deploy start --source-dir force-app/main/default/classes --target-org DEVALFA
-
-# Puis déployer le composant LWC
 sf project deploy start --source-dir force-app/main/default/lwc/propertySearch --target-org DEVALFA
-
-# Enfin, déployer les Remote Site Settings
+sf project deploy start --source-dir force-app/main/default/tabs --target-org DEVALFA
+sf project deploy start --source-dir force-app/main/default/applications/Property_Search_App.app-meta.xml --target-org DEVALFA
+# (optionnel si nécessaire)
 sf project deploy start --source-dir force-app/main/default/remoteSiteSettings --target-org DEVALFA
 ```
 
-**Note importante** : Sur DEVALFA, il faut déployer dans l'ordre : Classes Apex → LWC → Remote Site Settings.
+### **Déployer sur MyDevOrg**
+```bash
+# Ordre recommandé (full): Objects -> Apex -> LWC -> Tabs -> Application -> Remote Site (optionnel)
+sf project deploy start --source-dir force-app/main/default/objects --target-org MyDevOrg
+sf project deploy start --source-dir force-app/main/default/classes --target-org MyDevOrg
+sf project deploy start --source-dir force-app/main/default/lwc/propertySearch --target-org MyDevOrg
+sf project deploy start --source-dir force-app/main/default/tabs --target-org MyDevOrg
+sf project deploy start --source-dir force-app/main/default/applications/Property_Search_App.app-meta.xml --target-org MyDevOrg
+# (optionnel si nécessaire)
+sf project deploy start --source-dir force-app/main/default/remoteSiteSettings --target-org MyDevOrg
+```
+
+**Note importante** : L'application `Property_Search_App` ne référence plus l'onglet personnalisé `Search` pour assurer la compatibilité multi-org.
 
 Le composant est disponible sur App Builder (App, Home, Record) et Tab.
 
@@ -254,10 +274,21 @@ Projet interne. Documentation générée à partir de l'état actuel du code et 
 
 ### **DEVALFA (Org secondaire)**
 - **Deploy IDs** : 
-  - Classes Apex : `0Afau000005B893CAC`
-  - Composant LWC : `0Afau000005B8AfCAK`
-  - Remote Site Settings : `0Afau000005B8CHCA0`
-- **Temps total** : 4.97 secondes
+  - Objects: `0Afau000005BaA9CAK`
+  - Classes Apex : `0Afau000005BaBlCAK`
+  - LWC : `0Afau000005BaDNCA0`
+  - Tabs : `0Afau000005BaIDCA0`
+  - Application : `0Afau000005BaJpCAK`
 - **Statut** : ✅ Déployé et opérationnel
 
+### **MyDevOrg (Org secondaire)**
+- **Deploy IDs** : 
+  - Objects: `0AfgK000008PUEPSA4`
+  - Classes Apex : `0AfgK000008PUHdSAO`
+  - LWC : `0AfgK000008PUW9SAO`
+  - Tabs : `0AfgK000008PQE2SAO`
+  - Application : `0AfgK000008PUXlSAO`
+- **Statut** : ✅ Déployé et opérationnel
+
+**Les trois orgs cibles sont synchronisés avec la version 2.0.0 complète.** 🎉
 **Les deux orgs sont maintenant synchronisés avec la version 2.0.0 complète !** 🎉
