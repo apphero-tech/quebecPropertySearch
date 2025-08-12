@@ -77,6 +77,20 @@
     font-weight: 600;
 }
 
+/* Harmonisation polices/gras pour les titres et contenus */
+.property-header .property-address {
+    font-weight: 600;
+}
+
+.owner-section .slds-box p,
+.property-details-accordion p {
+    font-size: 0.875rem;
+}
+
+.slds-text-title_bold {
+    font-weight: 600;
+}
+
 .property-details-accordion p {
     margin-bottom: 0.5rem;
     line-height: 1.4;

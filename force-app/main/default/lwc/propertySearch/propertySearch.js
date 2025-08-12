@@ -149,7 +149,6 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
         const postalCode = queryLabeledValue('Code postal');
 
         const extracted = { address, ownerName, matricule, totalValue, postalCode };
-        console.log('extractDataFromDOM:', JSON.stringify(extracted));
         return extracted;
     }
     
@@ -413,6 +412,97 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
             addressLine1: line1,
             addressLine2: line2
         };
+    }
+
+    /**
+     * ÉTAPE 1 - Adresse formatée Canada Poste (utilise RL0201Dx pour la ville)
+     * Format: [Numéro] [Type traduit] [Nom], [Ville] QC [Code postal]
+     */
+    getFormattedPropertyAddress(data) {
+        try {
+            const getPath = (obj, path) => {
+                if (!obj) return '';
+                const parts = path.split('.');
+                let cur = obj;
+                for (const p of parts) {
+                    if (cur && typeof cur === 'object' && p in cur) {
+                        cur = cur[p];
+                    } else {
+                        return '';
+                    }
+                }
+                return cur == null ? '' : String(cur);
+            };
+
+            const civicNumber = getPath(data, 'RLUEx.RL0101.RL0101x.RL0101Ax') || data.rl0101Ax || '';
+            const streetTypeCode = getPath(data, 'RLUEx.RL0101.RL0101x.RL0101Ex') || data.rl0101Ex || '';
+            const streetName = getPath(data, 'RLUEx.RL0101.RL0101x.RL0101Gx') || data.rl0101Gx || '';
+            // Utiliser la municipalité sélectionnée (même source que l'adresse de la propriété)
+            // et ne pas utiliser la ville du propriétaire (RL0201Dx)
+            const municipality = this.selectedMunicipality || this.defaultMunicipality || '';
+            const postalCode = getPath(data, 'RLUEx.RL0101.RL0101x.POSTALCODE') || data.postalCode || '';
+
+            const fullStreetType = this.getFullStreetType(streetTypeCode);
+            const line1 = `${civicNumber} ${fullStreetType} ${streetName}`.trim();
+            if (!line1 || !municipality) return '';
+            return `${line1}, ${municipality} QC ${postalCode}`.trim();
+        } catch (_e) {
+            return '';
+        }
+    }
+
+    // (Badge propriétaire supprimé — rendu en texte par propriétaire)
+
+    /**
+     * ÉTAPE 2 - Propriétaires formatés (nom, adresse, date)
+     */
+    getFormattedOwners(data) {
+        const safeArray = (val) => (Array.isArray(val) ? val : (val ? [val] : []));
+        const getOwners = (obj) => {
+            try {
+                const nested = obj && obj.RLUEx && obj.RLUEx.RL0201 && obj.RLUEx.RL0201.RL0201x;
+                if (nested) return safeArray(nested);
+                if (obj && obj.RL0201x) return safeArray(obj.RL0201x);
+                return [];
+            } catch (_e) {
+                return [];
+            }
+        };
+        const owners = getOwners(data);
+        return owners.map((o) => {
+            const statut = o && o.RL0201Hx != null ? String(o.RL0201Hx) : '';
+            const lastName = o && o.RL0201Ax ? String(o.RL0201Ax).trim() : '';
+            const firstNameRaw = o && o.RL0201Bx ? String(o.RL0201Bx).trim() : '';
+            const firstName = firstNameRaw ? (firstNameRaw.charAt(0).toUpperCase() + firstNameRaw.slice(1).toLowerCase()) : '';
+            const formattedName = (statut === '1' && firstName) ? `${firstName} ${lastName}` : lastName;
+            const baseAddress = o && o.RL0201Cx ? String(o.RL0201Cx).trim() : '';
+            const city = o && o.RL0201Dx ? String(o.RL0201Dx).trim() : '';
+            const postal = o && o.RL0201Ex ? String(o.RL0201Ex).trim() : '';
+            let fullAddress = baseAddress;
+            if (city) {
+                fullAddress = fullAddress ? `${fullAddress}, ${city}` : city;
+                fullAddress += ' QC';
+                if (postal) fullAddress += ` ${postal}`;
+            }
+            const registrationDate = o && o.RL0201Gx ? String(o.RL0201Gx).trim() : '';
+            const id = `${formattedName}__${fullAddress}__${registrationDate}`;
+            const ownerTypeText = this.getStatutLabel(statut);
+            return { id, formattedName, ownerTypeText, fullAddress, registrationDate };
+        });
+    }
+
+    // Getters d'exposition (première propriété affichée)
+    get formattedPropertyAddress() {
+        const p = (this.properties && this.properties[0]) || null;
+        return (p && p.formattedPropertyAddress) ? p.formattedPropertyAddress : (p ? this.getFormattedPropertyAddress(p) : '');
+    }
+
+    // ownerTypeLabel/ownerTypeVariant retirés (plus utilisés)
+
+    get propertyOwners() {
+        const p = (this.properties && this.properties[0]) || null;
+        if (p && Array.isArray(p.formattedOwners)) return p.formattedOwners;
+        return p ? this.getFormattedOwners(p) : [];
     }
     
     /**
@@ -705,78 +795,6 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
      * Gestionnaire: clic sur "Save Assessment" (appel Apex)
      */
     handleSaveAssessment() {
-        console.log('Save Assessment clicked');
-        console.log('=== DEBUG COMPLET ===');
-        console.log('this.properties:', this.properties);
-        console.log('this.properties length:', this.properties ? this.properties.length : 'null');
-        console.log('this.showPropertyDetails:', this.showPropertyDetails);
-        console.log('this.selectedPropertyData:', this.selectedPropertyData);
-        console.log('this.propertyDetails:', this.propertyDetails);
-        try {
-            const sections = this.template.querySelectorAll('lightning-accordion-section');
-            console.log('Sections accordion trouvées:', sections ? sections.length : 0);
-        } catch (e) {
-            console.log('Erreur inspection DOM:', e && e.message ? e.message : e);
-        }
-        // Debug des éléments DOM
-        try {
-            const matriculeElement = this.template.querySelector('[data-field="matricule"]');
-            const totalValueElement = this.template.querySelector('[data-field="total-value"]');
-
-            console.log('Matricule element trouvé:', matriculeElement);
-            console.log('Matricule textContent:', matriculeElement ? matriculeElement.textContent : undefined);
-            console.log('Total value element trouvé:', totalValueElement);
-            console.log('Total value textContent:', totalValueElement ? totalValueElement.textContent : undefined);
-
-            // Vérifier tous les spans data-field
-            const allDataFields = this.template.querySelectorAll('[data-field]');
-            console.log('Tous les data-field trouvés:', allDataFields ? allDataFields.length : 0);
-            allDataFields.forEach(el => {
-                try {
-                    console.log(`data-field="${el.dataset.field}": "${el.textContent}"`);
-                } catch (inner) {
-                    console.log('Erreur lecture data-field:', inner && inner.message ? inner.message : inner);
-                }
-            });
-        } catch (e) {
-            console.log('Erreur debug data-field:', e && e.message ? e.message : e);
-        }
-        // Debug avancé pour localiser la source des données complètes
-        try {
-            console.log('properties[0] keys:', Object.keys((this.properties && this.properties[0]) ? this.properties[0] : {}));
-            console.log('properties[0] spread:', { ...((this.properties && this.properties[0]) ? this.properties[0] : {}) });
-        } catch (e) {
-            console.log('Erreur spread/keys properties[0]:', e && e.message ? e.message : e);
-        }
-        try {
-            const allProps = Object.getOwnPropertyNames(this);
-            console.log('Toutes les propriétés du composant:', allProps);
-            allProps.forEach(prop => {
-                try {
-                    const value = this[prop];
-                    const str = value ? JSON.stringify(value) : '';
-                    if (str && (str.includes('BRIEN') || str.includes('RITA'))) {
-                        console.log('Trouvé BRIEN/RITA dans:', prop, value);
-                    }
-                } catch (inner) {
-                    // ignorer erreurs de sérialisation
-                }
-            });
-        } catch (e) {
-            console.log('Erreur introspection propriétés composant:', e && e.message ? e.message : e);
-        }
-        console.log('this.rawData:', this.rawData);
-        console.log('this.mongoData:', this.mongoData);
-        console.log('this.currentProperty:', this.currentProperty);
-        
-        // Lecture directe du DOM visible (sans modifier la logique de sauvegarde existante)
-        try {
-            const domData = this.extractDataFromDOM();
-            console.log('DOM data snapshot (non-bloquant):', domData);
-        } catch (e) {
-            console.log('Erreur extractDataFromDOM:', e && e.message ? e.message : e);
-        }
-        
         if (!this.selectedPropertyData) {
             this.dispatchEvent(new ShowToastEvent({
                 title: 'Erreur',
@@ -785,7 +803,6 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
             }));
             return;
         }
-        console.log('selectedPropertyData:', JSON.stringify(this.selectedPropertyData, null, 2));
         const sp = typeof this.selectedPropertyData === 'string'
             ? JSON.parse(this.selectedPropertyData)
             : (this.selectedPropertyData || {});
@@ -809,37 +826,13 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
         } catch (e) {
             // no-op
         }
-        // Fallback DOM: lire le matricule et la valeur totale affichés si présents
-        try {
-            const matriculeEl = this.template.querySelector('[data-field="matricule"]');
-            const totalValueEl = this.template.querySelector('[data-field="total-value"]');
-            const domMatricule = matriculeEl ? matriculeEl.textContent.trim() : undefined;
-            const domTotalValueRaw = totalValueEl ? totalValueEl.textContent.trim() : undefined;
-            const parsedDomTotal = (() => {
-                if (!domTotalValueRaw) return undefined;
-                const s = domTotalValueRaw.replace(/[^0-9.,-]/g, '').replace(',', '.');
-                const n = parseFloat(s);
-                return Number.isFinite(n) ? String(n) : undefined;
-            })();
-            if (domMatricule) {
-                // Injecter en dernier fallback via variables locales utilisées plus bas
-                // On n’écrase rien ici, on utilisera preferValue plus bas
-                derivedTotalValue = this.preferValue(derivedTotalValue, parsedDomTotal);
-                // Stocker pour reuse dans preferValue plus bas via variables locales
-                var domMatriculeValue = domMatricule;
-                var domTotalValueValue = parsedDomTotal;
-            }
-        } catch (e) {
-            // no-op DOM
-        }
         const propertyToSave = {
             // Priorité: données normalisées (sp.*) -> attributs Flow exposés -> données brutes du résultat -> dérivés
             matricule: this.preferValue(
                 sp.matricule,
                 this.selectedPropertyMatricule,
                 p0 ? p0.rl0106A : undefined,
-                this.matriculeInput,
-                typeof domMatriculeValue !== 'undefined' ? domMatriculeValue : undefined
+                this.matriculeInput
             ),
             address: this.preferValue(
                 sp.fullAddress,
@@ -858,8 +851,7 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
                 p0 ? p0.rl0404A : undefined,
                 p0 ? p0.rl0413A : undefined,
                 p0 ? p0.rl0415A : undefined,
-                derivedTotalValue,
-                typeof domTotalValueValue !== 'undefined' ? domTotalValueValue : undefined
+                derivedTotalValue
             ),
             postalCode: this.preferValue(
                 sp.postalCode,
@@ -867,7 +859,6 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
                 p0 ? p0.postalCode : undefined
             )
         };
-        console.log('propertyToSave final:', JSON.stringify(propertyToSave, null, 2));
 
         saveCompleteProperty({ propertyData: JSON.stringify(propertyToSave) })
             .then((result) => {
@@ -1119,6 +1110,8 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
                 addressLine1: this.formatOwnerSearchAddress(doc),
                 addressLine2: this.formatOwnerSearchMunicipality(doc),
                 fullAddress: this.formatOwnerSearchFullAddress(doc),
+                formattedPropertyAddress: this.getFormattedPropertyAddress(doc),
+                formattedOwners: this.getFormattedOwners(doc),
                 // Autres propriétés nécessaires pour l'affichage
                 rl0101Ax: this.extractOwnerSearchValue(doc, 'RLUEx.RL0101.RL0101x.RL0101Ax'),
                 rl0101Gx: this.extractOwnerSearchValue(doc, 'RLUEx.RL0101.RL0101x.RL0101Gx'),
@@ -1169,11 +1162,15 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
      */
     formatAndDisplayProperty(mongoData) {
         try {
+            // Diagnostic de la structure reçue
+            // Nettoyage: suppression des logs de debug excessifs (phase propriétaire)
             // Extraire les données MongoDB selon la structure exacte
             const extractedData = this.extractMongoData(mongoData);
+            // DEBUG additionnel demandé
+            // (debug supprimé)
             
             // Créer l'objet propriété formaté avec TOUS les champs
-            const property = {
+            let property = {
                 // === INFORMATIONS GÉNÉRALES ===
                 ...this.extractGeneralInfo(mongoData),
                 
@@ -1181,7 +1178,24 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
                 ...this.formatCanadaPostAddress(mongoData),
                 
                 // === SECTION 1 : IDENTIFICATION DE L'UNITÉ D'ÉVALUATION ===
-                ...this.extractIdentificationInfo(extractedData.rl0101x, extractedData.rl0103x, extractedData.rl0104, extractedData.rluex),
+                ...this.extractIdentificationInfo(mongoData),
+
+                // === SECTION 2 (partie champs propriétaires en accès direct) ===
+                rl0201Ax: this.getSecureValue(mongoData, 'RLUEx.RL0201.RL0201x.RL0201Ax'),
+                rl0201Bx: this.getSecureValue(mongoData, 'RLUEx.RL0201.RL0201x.RL0201Bx'),
+                rl0201Cx: this.getSecureValue(mongoData, 'RLUEx.RL0201.RL0201x.RL0201Cx'),
+                rl0201Dx: this.getSecureValue(mongoData, 'RLUEx.RL0201.RL0201x.RL0201Dx'),
+                rl0201Ex: this.getSecureValue(mongoData, 'RLUEx.RL0201.RL0201x.RL0201Ex'),
+                rl0201Fx: this.getSecureValue(mongoData, 'RLUEx.RL0201.RL0201x.RL0201Fx'),
+                rl0201Gx: this.getSecureValue(mongoData, 'RLUEx.RL0201.RL0201x.RL0201Gx'),
+                rl0201Hx: this.getSecureValue(mongoData, 'RLUEx.RL0201.RL0201x.RL0201Hx'),
+                rl0201Ix: this.getSecureValue(mongoData, 'RLUEx.RL0201.RL0201x.RL0201Ix'),
+                rl0201Kx: this.getSecureValue(mongoData, 'RLUEx.RL0201.RL0201x.RL0201Kx'),
+                rl0201Mx: this.getSecureValue(mongoData, 'RLUEx.RL0201.RL0201x.RL0201Mx'),
+                rl0201Qx: this.getSecureValue(mongoData, 'RLUEx.RL0201.RL0201x.RL0201Qx'),
+                rl0201Rx: this.getSecureValue(mongoData, 'RLUEx.RL0201.RL0201x.RL0201Rx'),
+                // Condition d'inscription (niveau RL0201)
+                rl0201U: this.getSecureValue(mongoData, 'RLUEx.RL0201.RL0201U'),
                 
                 // === SECTION 2 : IDENTIFICATION DU PROPRIÉTAIRE ===
                 // Traitement des propriétaires avec TOUS les champs MongoDB
@@ -1191,18 +1205,163 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
                 ...this.extractCharacteristicsInfo(mongoData),
                 
                 // === SECTION 4 : VALEURS ET ÉVALUATION ===
-                ...this.extractValuationInfo(extractedData.rluex),
+                ...this.extractValuationInfo(mongoData),
                 
                 // === SECTION 5 : RENSEIGNEMENTS ANNEXABLES ===
-                ...this.extractAnnexableInfo(extractedData.rl0504x, extractedData.annexesUnite, extractedData.annexesGlobal),
+                ...this.extractAnnexableInfo(mongoData),
                 
                 // === SECTION 6 : RÉPARTITIONS FISCALES ===
-                ...this.extractFiscalInfo(extractedData.rl0502, extractedData.rl0503),
+                ...this.extractFiscalInfo(mongoData),
                 
+                // === SECTION 6bis : DÉCLARATION PAR L'ÉVALUATEUR ===
+                rl0601A: this.getSecureValue(mongoData, 'RL0601A'),
+                rl0601B: this.getSecureValue(mongoData, 'RL0601B'),
+                rl0602A: this.getSecureValue(mongoData, 'RL0602A'),
+                rl0603A: this.getSecureValue(mongoData, 'RL0603A'),
+                rl0604A: this.getSecureValue(mongoData, 'RL0604A'),
+                rl0605A: this.getSecureValue(mongoData, 'RL0605A'),
+
                 // === SECTION 7 : SECTIONS SPÉCIALES RLZU ===
-                ...this.extractSpecialSections(extractedData.rlzu3001, extractedData.rlzu5001)
+                ...this.extractSpecialSections(mongoData)
             };
-            console.log('DEBUG mapping rl0106A (matricule)=', property.rl0106A, 'rl0404A (valeur totale)=', property.rl0404A);
+            // Ajouts Phase 1: champs formatés par propriété
+            property.formattedPropertyAddress = this.getFormattedPropertyAddress(mongoData) || this.getFormattedPropertyAddress(property);
+            property.formattedOwners = this.getFormattedOwners(mongoData);
+            // Section 1: valeurs d'affichage nettoyées (pas de "Non disponible")
+            const sdv = (v) => this.sanitizeDisplayValue(v);
+            // Dossier et classification
+            property.displayNumeroDossier = sdv(property.rl0106A);
+            const utilCode = sdv(property.rl0105A);
+            const utilLabel = this.getUtilisationLabel(utilCode);
+            property.displayUtilisation = utilLabel ? `${utilLabel} (Code: ${utilCode})` : (utilCode ? `(Code: ${utilCode})` : '');
+            property.displayUniteVoisinage = sdv(property.rl0107A);
+            // Informations du rôle
+            property.displayVersion = sdv(property.version);
+            property.displayCodeMunicipalite = sdv(property.codeMunicipalite);
+            property.displayAnneeRole = sdv(property.anneeRole);
+            // Identification cadastrale
+            property.displayRl0104A = sdv(property.rl0104A);
+            property.displayRl0104B = sdv(property.rl0104B);
+            property.displayRl0104C = sdv(property.rl0104C);
+            property.displayRl0104G = sdv(property.rl0104G);
+            property.displayRl0104D = sdv(property.rl0104D);
+
+            // === SECTION 3 : CARACTÉRISTIQUES (affichage épuré) ===
+            // Bâtiment principal
+            property.displayRl0306A = sdv(property.rl0306A);
+            property.displayRl0307A = sdv(property.rl0307A);
+            {
+                const cTypeCode = sdv(property.rl0307B);
+                const cTypeLabel = this.getConstructionTypeLabel(cTypeCode);
+                property.displayRl0307B = cTypeLabel || (cTypeCode ? `(Code: ${cTypeCode})` : '');
+            }
+            property.displayRl0317A = sdv(property.rl0317A);
+            // Terrain
+            property.displayRl0302A = sdv(property.rl0302A);
+            property.displayRl0301A = sdv(property.rl0301A);
+            {
+                const zCode = sdv(property.rl0303A);
+                const zLabel = this.getZonageAgricoleLabel(zCode);
+                property.displayRl0303A = zLabel || (zCode ? `(Code: ${zCode})` : '');
+            }
+            property.displayRl0305A = sdv(property.rl0305A);
+            // Autres caractéristiques
+            property.displayRl0309A = sdv(property.rl0309A);
+            property.displayRl0310A = sdv(property.rl0310A);
+            property.displayRl0311A = sdv(property.rl0311A);
+            property.displayRl0312A = sdv(property.rl0312A);
+
+            // === SECTION 4 : VALEURS (affichage épuré) ===
+            property.displayRl0401A = sdv(property.rl0401A);
+            // Valeurs en vigueur
+            property.displayRl0402A = this.formatNumber(sdv(property.rl0402A));
+            property.displayRl0403A = this.formatNumber(sdv(property.rl0403A));
+            property.displayRl0404A = this.formatNumber(sdv(property.rl0404A));
+            property.displayRl0411A = this.formatNumber(sdv(property.rl0411A));
+            property.displayRl0412A = this.formatNumber(sdv(property.rl0412A));
+            // Valeur comparative (brut ou numérique formaté)
+            property.displayRl0405A = this.formatNumber(sdv(property.rl0405A));
+            property.displayRl0406A = sdv(property.rl0406A);
+            property.displayRl0407A = sdv(property.rl0407A);
+            property.displayRl0408A = this.formatNumber(sdv(property.rl0408A));
+            property.displayRl0409A = this.formatNumber(sdv(property.rl0409A));
+            property.displayRl0410A = this.formatNumber(sdv(property.rl0410A));
+
+            // === SECTION 5 : RÉPARTITION FISCALE (affichage épuré) ===
+            // Catégories de base
+            property.displayRl0501A = sdv(property.rl0501A);
+            property.displayRl0502A = sdv(property.rl0502A);
+            property.displayRl0502B = sdv(property.rl0502B);
+            property.displayRl0502C = sdv(property.rl0502C);
+            property.displayRl0503A = sdv(property.rl0503A);
+            property.displayRl0503B = sdv(property.rl0503B);
+            property.displayRl0503C = sdv(property.rl0503C);
+            // Secteur
+            property.displayRl0508A = sdv(property.rl0508A);
+
+            // === SECTION 6 : DÉCLARATION PAR L'ÉVALUATEUR (affichage épuré) ===
+            property.displayRl0601A = sdv(property.rl0601A); // Nom de l'évaluateur
+            property.displayRl0601B = sdv(property.rl0601B); // Prénom de l'évaluateur
+            property.displayRl0602A = sdv(property.rl0602A); // Titre de l'évaluateur
+            property.displayRl0603A = sdv(property.rl0603A); // Organisme municipal responsable
+            property.displayRl0604A = sdv(property.rl0604A); // Date de signature
+            property.displayRl0605A = sdv(property.rl0605A); // Lieu de signature
+            // Libellés dérivés pour affichage (statut et condition)
+            const fallbackOwner = property.owners && property.owners.length ? property.owners[0] : undefined;
+            let statutCodeForBadge = property.rl0201Hx || '';
+            // Si code invalide/non disponible au niveau propriété, basculer sur le 1er propriétaire
+            if (String(statutCodeForBadge) !== '1' && String(statutCodeForBadge) !== '2') {
+                statutCodeForBadge = (fallbackOwner ? fallbackOwner.statutCode : '') || '';
+            }
+            if (String(statutCodeForBadge) !== '1' && String(statutCodeForBadge) !== '2') {
+                statutCodeForBadge = '';
+            }
+            property.statutImpositionCode = statutCodeForBadge;
+            property.statutImpositionLabel = this.getStatutImpositionLabel(property.statutImpositionCode);
+            property.conditionInscriptionLabel = this.getConditionInscriptionLabel(property.rl0201U);
+
+            // === SECTION 7 : INFORMATIONS ANNEXABLES GLOBALES (affichage épuré) ===
+            property.displayRlzg0001 = sdv(property.rlzg0001);
+            property.displayRlzg0002 = sdv(property.rlzg0002);
+            property.displayRlzu3001A = sdv(property.rlzu3001A);
+            property.displayRlzu3001B = sdv(property.rlzu3001B);
+            property.displayRlzu3001C = sdv(property.rlzu3001C);
+            property.displayRlzu5001A = sdv(property.rlzu5001A);
+            property.displayRlzu5001B = sdv(property.rlzu5001B);
+            property.displayRlzu5001C = sdv(property.rlzu5001C);
+
+            // === SECTION 8 : RENSEIGNEMENTS ANNEXABLES DE L'UNITÉ (affichage épuré) ===
+            property.displayRlzu3005A = sdv(property.rlzu3005A);
+            property.displayRlzu3005B = sdv(property.rlzu3005B);
+            property.displayRlzu3005C = sdv(property.rlzu3005C);
+            property.displayRlzu3006B = sdv(property.rlzu3006B);
+            property.displayRlzu3007x = sdv(property.rlzu3007x);
+            property.displayRlzu3101 = sdv(property.rlzu3101);
+            property.displayRlzu3102 = sdv(property.rlzu3102);
+            property.displayRlzu3103 = sdv(property.rlzu3103);
+            property.displayRlzu3104 = this.formatNumber(sdv(property.rlzu3104));
+            property.displayRlzu4001 = this.formatNumber(sdv(property.rlzu4001));
+            property.displayRlzu4002 = this.formatNumber(sdv(property.rlzu4002));
+
+            // Mapping compatible pour la logique d'adresse unifiée (accès brut RL0201x)
+            property.RL0201x = [];
+            if (mongoData && mongoData.RLUEx && mongoData.RLUEx.RL0201 && mongoData.RLUEx.RL0201.RL0201x) {
+                const raw = mongoData.RLUEx.RL0201.RL0201x;
+                property.RL0201x = Array.isArray(raw) ? raw : [raw];
+            }
+            // (debug supprimé)
+            // Visibilité conditionnelle des sections et normalisation des détails
+            const hasAnyValue = (...vals) => vals.some(v => v !== undefined && v !== null && String(v).trim() && String(String(v)).trim().toLowerCase() !== 'non disponible');
+            property.rl0504Details = Array.isArray(property.rl0504x) ? property.rl0504x : [];
+            property.section3Visible = hasAnyValue(
+                property.rl0301A,
+                property.rl0302A,
+                property.rl0303A,
+                property.rl0311A,
+                property.rl0312A,
+                property.rl0320A
+            );
+            // (debug supprimé)
             
             // Mettre à jour l'interface utilisateur
             this.updateUIWithProperty(property);
@@ -1252,12 +1411,7 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
      * Mise à jour de l'interface utilisateur avec la propriété
      */
     updateUIWithProperty(property) {
-        console.log('DEBUG before UI assign rl0106A=', property.rl0106A, 'rl0404A=', property.rl0404A);
         this.properties = [property];
-        try {
-            console.log('DEBUG after UI assign rl0106A=', this.properties && this.properties[0] ? this.properties[0].rl0106A : undefined,
-                        'rl0404A=', this.properties && this.properties[0] ? this.properties[0].rl0404A : undefined);
-        } catch (e) {}
         this.showPropertyDetails = true;
         this.showNoResults = false;
         
@@ -1288,45 +1442,45 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
     /**
      * Extraction des informations d'identification
      */
-    extractIdentificationInfo(rl0101x, rl0103x, rl0104, rluex) {
+    extractIdentificationInfo(mongoData) {
         return {
             // Groupe Adresse (RL0101x)
-            rl0101Ax: this.getSecureValue(rl0101x, 'RL0101Ax'), // Numéro civique
-            rl0101Bx: this.getSecureValue(rl0101x, 'RL0101Bx'), // Fraction numéro inférieur
-            rl0101Cx: this.getSecureValue(rl0101x, 'RL0101Cx'), // Numéro supérieur
-            rl0101Dx: this.getSecureValue(rl0101x, 'RL0101Dx'), // Fraction numéro supérieur
-            rl0101Ex: this.getSecureValue(rl0101x, 'RL0101Ex'), // Code générique (type rue)
-            rl0101Fx: this.getSecureValue(rl0101x, 'RL0101Fx'), // Code de lien
-            rl0101Gx: this.getSecureValue(rl0101x, 'RL0101Gx'), // Nom voie publique
-            rl0101Hx: this.getSecureValue(rl0101x, 'RL0101Hx'), // Point cardinal
-            rl0101Ix: this.getSecureValue(rl0101x, 'RL0101Ix'), // Numéro appartement/local
-            rl0101Jx: this.getSecureValue(rl0101x, 'RL0101Jx'), // Partie complémentaire
-            postalCode: this.getSecureValue(rl0101x, 'POSTALCODE'), // Code postal
-            
+            rl0101Ax: this.getSecureValue(mongoData, 'RLUEx.RL0101.RL0101x.RL0101Ax'),
+            rl0101Bx: this.getSecureValue(mongoData, 'RLUEx.RL0101.RL0101x.RL0101Bx'),
+            rl0101Cx: this.getSecureValue(mongoData, 'RLUEx.RL0101.RL0101x.RL0101Cx'),
+            rl0101Dx: this.getSecureValue(mongoData, 'RLUEx.RL0101.RL0101x.RL0101Dx'),
+            rl0101Ex: this.getSecureValue(mongoData, 'RLUEx.RL0101.RL0101x.RL0101Ex'),
+            rl0101Fx: this.getSecureValue(mongoData, 'RLUEx.RL0101.RL0101x.RL0101Fx'),
+            rl0101Gx: this.getSecureValue(mongoData, 'RLUEx.RL0101.RL0101x.RL0101Gx'),
+            rl0101Hx: this.getSecureValue(mongoData, 'RLUEx.RL0101.RL0101x.RL0101Hx'),
+            rl0101Ix: this.getSecureValue(mongoData, 'RLUEx.RL0101.RL0101x.RL0101Ix'),
+            rl0101Jx: this.getSecureValue(mongoData, 'RLUEx.RL0101.RL0101x.RL0101Jx'),
+            postalCode: this.getSecureValue(mongoData, 'RLUEx.RL0101.RL0101x.POSTALCODE'),
+
             // Groupe Numéro de dossier (RL0103x)
-            rl0103Ax: this.getSecureValue(rl0103x, 'RL0103Ax'), // Numéro de dossier
-            
+            rl0103Ax: this.getSecureValue(mongoData, 'RLUEx.RL0103.RL0103x.RL0103Ax'),
+
             // Groupe Détails cadastraux (RL0104)
-            rl0104A: this.getSecureValue(rl0104, 'RL0104A'), // Numéro de lot
-            rl0104B: this.getSecureValue(rl0104, 'RL0104B'), // Partie de lot
-            rl0104C: this.getSecureValue(rl0104, 'RL0104C'), // Rang/Concession
-            rl0104D: this.getSecureValue(rl0104, 'RL0104D'), // Subdivision
-            rl0104E: this.getSecureValue(rl0104, 'RL0104E'), // Numéro bâtiment
-            rl0104F: this.getSecureValue(rl0104, 'RL0104F'), // Numéro local
-            rl0104G: this.getSecureValue(rl0104, 'RL0104G'), // Code géographique
-            rl0104H: this.getSecureValue(rl0104, 'RL0104H'), // Discriminant
-            
+            rl0104A: this.getSecureValue(mongoData, 'RLUEx.RL0104.RL0104A'),
+            rl0104B: this.getSecureValue(mongoData, 'RLUEx.RL0104.RL0104B'),
+            rl0104C: this.getSecureValue(mongoData, 'RLUEx.RL0104.RL0104C'),
+            rl0104D: this.getSecureValue(mongoData, 'RLUEx.RL0104.RL0104D'),
+            rl0104E: this.getSecureValue(mongoData, 'RLUEx.RL0104.RL0104E'),
+            rl0104F: this.getSecureValue(mongoData, 'RLUEx.RL0104.RL0104F'),
+            rl0104G: this.getSecureValue(mongoData, 'RLUEx.RL0104.RL0104G'),
+            rl0104H: this.getSecureValue(mongoData, 'RLUEx.RL0104.RL0104H'),
+
             // === AUTRES INFORMATIONS D'IDENTIFICATION COMPLÈTES ===
-            rl0105A: this.getSecureValue(rluex, 'RL0105A'), // Code d'utilisation
-            rl0106A: this.getSecureValue(rluex, 'RL0106A'), // Matricule
-            rl0107A: this.getSecureValue(rluex, 'RL0107A'), // Code de l'évaluateur
-            
+            rl0105A: this.getSecureValue(mongoData, 'RLUEx.RL0105A'),
+            rl0106A: this.getSecureValue(mongoData, 'RLUEx.RL0106A'),
+            rl0107A: this.getSecureValue(mongoData, 'RLUEx.RL0107A'),
+
             // === INFORMATIONS SUPPLÉMENTAIRES ===
-            rl0108A: this.getSecureValue(rluex, 'RL0108A'), // Code type propriété
-            rl0109A: this.getSecureValue(rluex, 'RL0109A'), // Code statut propriété
-            rl0110A: this.getSecureValue(rluex, 'RL0110A'), // Code zone spéciale
-            rl0111A: this.getSecureValue(rluex, 'RL0111A'), // Code restriction
-            rl0112A: this.getSecureValue(rluex, 'RL0112A')  // Code environnement
+            rl0108A: this.getSecureValue(mongoData, 'RLUEx.RL0108A'),
+            rl0109A: this.getSecureValue(mongoData, 'RLUEx.RL0109A'),
+            rl0110A: this.getSecureValue(mongoData, 'RLUEx.RL0110A'),
+            rl0111A: this.getSecureValue(mongoData, 'RLUEx.RL0111A'),
+            rl0112A: this.getSecureValue(mongoData, 'RLUEx.RL0112A')
         };
     }
 
@@ -1380,38 +1534,38 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
                     if (!prop) return null;
 
                     // Nom et prénom
-                    const nom = prop.RL0201Ax || 'Non disponible';
-                    const prenom = prop.RL0201Bx || '';
+                    const nom = this.sanitizeDisplayValue(prop.RL0201Ax) || 'Non disponible';
+                    const prenom = this.sanitizeDisplayValue(prop.RL0201Bx);
                     
                     // Statut et dates
-                    const statutCode = prop.RL0201Hx;
+                    const statutCode = prop.RL0201Hx || '';
                     const dateInscription = prop.RL0201Gx || '';
 
                     // ADRESSE COMPLETE DU PROPRIÉTAIRE
                     const adresseComplete = {
                         // Adresse structurée
-                        numeroCivique: prop.RL0201Ix || '',
-                        fractionAdresse: prop.RL0201Jx || '', // ✅ MANQUANT
-                        codeGenerique: prop.RL0201Kx || '',
-                        codeLien: prop.RL0201Lx || '', // ✅ MANQUANT
-                        nomVoiePublique: prop.RL0201Mx || '',
-                        pointCardinal: prop.RL0201Nx || '', // ✅ MANQUANT
-                        numeroAppartement: prop.RL0201Ox || '', // ✅ MANQUANT
-                        fractionAppartement: prop.RL0201Px || '', // ✅ MANQUANT
+                        numeroCivique: this.sanitizeDisplayValue(prop.RL0201Ix),
+                        fractionAdresse: this.sanitizeDisplayValue(prop.RL0201Jx),
+                        codeGenerique: this.sanitizeDisplayValue(prop.RL0201Kx),
+                        codeLien: this.sanitizeDisplayValue(prop.RL0201Lx),
+                        nomVoiePublique: this.sanitizeDisplayValue(prop.RL0201Mx),
+                        pointCardinal: this.sanitizeDisplayValue(prop.RL0201Nx),
+                        numeroAppartement: this.sanitizeDisplayValue(prop.RL0201Ox),
+                        fractionAppartement: this.sanitizeDisplayValue(prop.RL0201Px),
                         
                         // Adresse non structurée
-                        adresseNonStructuree: prop.RL0201Cx || '',
+                        adresseNonStructuree: this.sanitizeDisplayValue(prop.RL0201Cx),
                         
                         // Localisation
-                        municipalite: prop.RL0201Dx || '',
-                        codePostal: prop.RL0201Ex || '',
-                        province: prop.RL0201Qx || '', // ✅ MANQUANT (souvent "QC")
-                        pays: prop.RL0201Rx || '', // ✅ MANQUANT (souvent "CA")
+                        municipalite: this.sanitizeDisplayValue(prop.RL0201Dx),
+                        codePostal: this.sanitizeDisplayValue(prop.RL0201Ex),
+                        province: this.sanitizeDisplayValue(prop.RL0201Qx),
+                        pays: this.sanitizeDisplayValue(prop.RL0201Rx),
                         
                         // Compléments
-                        complementAdresse: prop.RL0201Fx || '', // ✅ MANQUANT
-                        casePostale: prop.RL0201Sx || '', // ✅ MANQUANT
-                        succursalePostale: prop.RL0201Tx || '' // ✅ MANQUANT
+                        complementAdresse: this.sanitizeDisplayValue(prop.RL0201Fx),
+                        casePostale: this.sanitizeDisplayValue(prop.RL0201Sx),
+                        succursalePostale: this.sanitizeDisplayValue(prop.RL0201Tx)
                     };
 
                     return {
@@ -1420,7 +1574,7 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
                         nom: nom,
                         prenom: prenom,
                         statutCode: statutCode,
-                        statutLabel: this.getStatutLabel(statutCode),
+                        statutLabel: this.getStatutImpositionLabel(statutCode),
                         dateInscription: dateInscription,
                         dateInscriptionFormatted: this.formatDate(dateInscription),
                         
@@ -1431,9 +1585,9 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
                         adresseFormatee: this.formatOwnerAddress(adresseComplete),
                         
                         // Champs existants (pour compatibilité)
-                        adressePostale: prop.RL0201Cx || '',
-                        ville: prop.RL0201Dx || '',
-                        codePostal: prop.RL0201Ex || ''
+                        adressePostale: this.sanitizeDisplayValue(prop.RL0201Cx),
+                        ville: this.sanitizeDisplayValue(prop.RL0201Dx),
+                        codePostal: this.sanitizeDisplayValue(prop.RL0201Ex)
                     };
                 })
                 .filter(owner => owner !== null);
@@ -1465,85 +1619,133 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
     /**
      * Extraction des caractéristiques de l'unité d'évaluation
      */
-    extractCharacteristicsInfo(rluex) {
+    extractCharacteristicsInfo(mongoData) {
         return {
             // === CARACTÉRISTIQUES DU TERRAIN ===
-            rl0301A: this.getSecureValue(rluex, 'RL0301A'), // Dimension linéaire/mesure frontale
-            rl0302A: this.getSecureValue(rluex, 'RL0302A'), // Superficie du terrain
-            rl0303A: this.getSecureValue(rluex, 'RL0303A'), // Code zonage agricole
-            rl0304A: this.getSecureValue(rluex, 'RL0304A'), // Superficie exploitation agricole totale
-            rl0305A: this.getSecureValue(rluex, 'RL0305A'), // Superficie exploitation agricole en zone
-            rl0314A: this.getSecureValue(rluex, 'RL0314A'), // Superficie imposition maximale
-            rl0315A: this.getSecureValue(rluex, 'RL0315A'), // Superficie vocation forestière totale
-            rl0316A: this.getSecureValue(rluex, 'RL0316A'), // Superficie vocation forestière en zone agricole
-            rl0320A: this.getSecureValue(rluex, 'RL0320A'), // Superficie agricole exploitable non exploitée
+            rl0301A: this.getSecureValue(mongoData, 'RLUEx.RL0301A'),
+            rl0302A: this.getSecureValue(mongoData, 'RLUEx.RL0302A'),
+            rl0303A: this.getSecureValue(mongoData, 'RLUEx.RL0303A'),
+            rl0304A: this.getSecureValue(mongoData, 'RLUEx.RL0304A'),
+            rl0305A: this.getSecureValue(mongoData, 'RLUEx.RL0305A'),
+            rl0314A: this.getSecureValue(mongoData, 'RLUEx.RL0314A'),
+            rl0315A: this.getSecureValue(mongoData, 'RLUEx.RL0315A'),
+            rl0316A: this.getSecureValue(mongoData, 'RLUEx.RL0316A'),
+            rl0320A: this.getSecureValue(mongoData, 'RLUEx.RL0320A'),
             
             // === CARACTÉRISTIQUES DU BÂTIMENT PRINCIPAL ===
-            rl0306A: this.getSecureValue(rluex, 'RL0306A'), // Nombre maximal d'étages
-            rl0307A: this.getSecureValue(rluex, 'RL0307A'), // Année construction originelle
-            rl0307B: this.getSecureValue(rluex, 'RL0307B'), // Mention réelle/estimée
-            rl0308A: this.getSecureValue(rluex, 'RL0308A'), // Aire d'étages
-            rl0309A: this.getSecureValue(rluex, 'RL0309A'), // Code lien physique
-            rl0310A: this.getSecureValue(rluex, 'RL0310A'), // Code genre construction
-            rl0311A: this.getSecureValue(rluex, 'RL0311A'), // Nombre d'étages
-            rl0312A: this.getSecureValue(rluex, 'RL0312A'), // Nombre d'unités locatives
-            rl0313A: this.getSecureValue(rluex, 'RL0313A'), // Code d'utilisation
-            rl0317A: this.getSecureValue(rluex, 'RL0317A'), // Superficie bâtiment
-            rl0318A: this.getSecureValue(rluex, 'RL0318A'), // Code type construction
+            rl0306A: this.getSecureValue(mongoData, 'RLUEx.RL0306A'),
+            rl0307A: this.getSecureValue(mongoData, 'RLUEx.RL0307A'),
+            rl0307B: this.getSecureValue(mongoData, 'RLUEx.RL0307B'),
+            rl0308A: this.getSecureValue(mongoData, 'RLUEx.RL0308A'),
+            rl0309A: this.getSecureValue(mongoData, 'RLUEx.RL0309A'),
+            rl0310A: this.getSecureValue(mongoData, 'RLUEx.RL0310A'),
+            rl0311A: this.getSecureValue(mongoData, 'RLUEx.RL0311A'),
+            rl0312A: this.getSecureValue(mongoData, 'RLUEx.RL0312A'),
+            rl0313A: this.getSecureValue(mongoData, 'RLUEx.RL0313A'),
+            rl0317A: this.getSecureValue(mongoData, 'RLUEx.RL0317A'),
+            rl0318A: this.getSecureValue(mongoData, 'RLUEx.RL0318A'),
             
             // === CARACTÉRISTIQUES SUPPLÉMENTAIRES ===
-            rl0319A: this.getSecureValue(rluex, 'RL0319A'), // Code qualité construction
-            rl0321A: this.getSecureValue(rluex, 'RL0321A'), // Code accessibilité
-            rl0322A: this.getSecureValue(rluex, 'RL0322A'), // Code équipements spéciaux
-            rl0323A: this.getSecureValue(rluex, 'RL0323A'), // Code restrictions
-            rl0324A: this.getSecureValue(rluex, 'RL0324A')  // Code environnement
+            rl0319A: this.getSecureValue(mongoData, 'RLUEx.RL0319A'),
+            rl0321A: this.getSecureValue(mongoData, 'RLUEx.RL0321A'),
+            rl0322A: this.getSecureValue(mongoData, 'RLUEx.RL0322A'),
+            rl0323A: this.getSecureValue(mongoData, 'RLUEx.RL0323A'),
+            rl0324A: this.getSecureValue(mongoData, 'RLUEx.RL0324A')
         };
     }
 
     /**
      * Extraction des informations de valorisation
      */
-    extractValuationInfo(rluex) {
+    extractValuationInfo(mongoData) {
         return {
             // === VALEURS FONCIÈRES COMPLÈTES ===
-            rl0401A: this.getSecureValue(rluex, 'RL0401A'), // Date d'évaluation
-            rl0402A: this.getSecureValue(rluex, 'RL0402A'), // Valeur du terrain
-            rl0403A: this.getSecureValue(rluex, 'RL0403A'), // Valeur du bâtiment
-            rl0404A: this.getSecureValue(rluex, 'RL0404A'), // Valeur totale
-            rl0405A: this.getSecureValue(rluex, 'RL0405A'), // Valeur imposable
+            rl0401A: this.getSecureValue(mongoData, 'RLUEx.RL0401A'),
+            rl0402A: this.getSecureValue(mongoData, 'RLUEx.RL0402A'),
+            rl0403A: this.getSecureValue(mongoData, 'RLUEx.RL0403A'),
+            rl0404A: this.getSecureValue(mongoData, 'RLUEx.RL0404A'),
+            rl0405A: this.getSecureValue(mongoData, 'RLUEx.RL0405A'),
             
             // === INFORMATIONS FISCALES COMPLÈTES ===
-            rl0406A: this.getSecureValue(rluex, 'RL0406A'), // Code d'exonération
-            rl0407A: this.getSecureValue(rluex, 'RL0407A'), // Code de classification
-            rl0408A: this.getSecureValue(rluex, 'RL0408A'), // Code de facteur d'ajustement
-            rl0409A: this.getSecureValue(rluex, 'RL0409A'), // Facteur d'ajustement
-            rl0410A: this.getSecureValue(rluex, 'RL0410A'), // Code de facteur d'ajustement
+            rl0406A: this.getSecureValue(mongoData, 'RLUEx.RL0406A'),
+            rl0407A: this.getSecureValue(mongoData, 'RLUEx.RL0407A'),
+            rl0408A: this.getSecureValue(mongoData, 'RLUEx.RL0408A'),
+            rl0409A: this.getSecureValue(mongoData, 'RLUEx.RL0409A'),
+            rl0410A: this.getSecureValue(mongoData, 'RLUEx.RL0410A'),
             
             // === VALEURS SUPPLÉMENTAIRES ===
-            rl0411A: this.getSecureValue(rluex, 'RL0411A'), // Valeur unitaire terrain
-            rl0412A: this.getSecureValue(rluex, 'RL0412A'), // Valeur unitaire bâtiment
-            rl0413A: this.getSecureValue(rluex, 'RL0413A'), // Valeur de marché estimée
-            rl0414A: this.getSecureValue(rluex, 'RL0414A'), // Valeur d'assurance
-            rl0415A: this.getSecureValue(rluex, 'RL0415A')  // Valeur de remplacement
+            rl0411A: this.getSecureValue(mongoData, 'RLUEx.RL0411A'),
+            rl0412A: this.getSecureValue(mongoData, 'RLUEx.RL0412A'),
+            rl0413A: this.getSecureValue(mongoData, 'RLUEx.RL0413A'),
+            rl0414A: this.getSecureValue(mongoData, 'RLUEx.RL0414A'),
+            rl0415A: this.getSecureValue(mongoData, 'RLUEx.RL0415A')
         };
     }
 
     /**
      * Extraction des renseignements annexables
      */
-    extractAnnexableInfo(rl0504x, annexesUnite, annexesGlobal) {
+    extractAnnexableInfo(mongoData) {
+        const rl0504x = this.getSecureValue(mongoData, 'RLUEx.RL0504.RL0504x', []);
+        const annexesUnite = this.getSecureValue(mongoData, 'RLUEx.RENSEIGNEMENTS_ANNEXABLES_UNITE', {});
+        const annexesGlobal = this.getSecureValue(mongoData, 'RENSEIGNEMENTS_ANNEXABLES_GLOBAL', {});
+
+        // RLZU1007/1008 details
+        const rlzu1007Details = this.formatRLZU1007Details(annexesUnite.RLZU1007);
+        const rlzu1008Details = this.formatRLZU1008Details(annexesUnite.RLZU1008);
+
+        // RLZU2001 details: handle object or array for RLZU2001x
+        let rlzu2001Details = [];
+        const rlzu2001 = annexesUnite.RLZU2001;
+        if (rlzu2001 && rlzu2001.RLZU2001x) {
+            const src = rlzu2001.RLZU2001x;
+            if (Array.isArray(src)) {
+                rlzu2001Details = src.map((it) => ({
+                    numeroBatiment: this.getSecureValue(it, 'RLZU2001Ax'),
+                    coutRemplacement: this.getSecureValue(it, 'RLZU2001Bx'),
+                    classe: this.getSecureValue(it, 'RLZU2001Ex'),
+                    typeConstruction: this.getSecureValue(it, 'RLZU2001Fx')
+                }));
+            } else {
+                rlzu2001Details = this.formatRLZU2001Details(rlzu2001);
+            }
+        }
+
         return {
-            // Renseignements annexables de l'unité
-            rl0504x: this.formatRL0504Details(rl0504x),
-            annexesUnite: annexesUnite,
-            annexesGlobal: annexesGlobal
+            // Détails RL0504 déjà formatés
+            rl0504x: this.formatRL0504DetailsFromArray(rl0504x),
+
+            // RLZG (annexables global)
+            rlzg0001: this.getSecureValue(annexesGlobal, 'RLZG0001'),
+            rlzg0002: this.getSecureValue(annexesGlobal, 'RLZG0002'),
+
+            // RLZU (annexables unité) - détails structurés
+            rlzu1007Details,
+            rlzu1008Details,
+            rlzu2001Details,
+
+            // RLZU (annexables unité) - champs plats
+            rlzu3005A: this.getSecureValue(annexesUnite, 'RLZU3005A'),
+            rlzu3005B: this.getSecureValue(annexesUnite, 'RLZU3005B'),
+            rlzu3005C: this.getSecureValue(annexesUnite, 'RLZU3005C'),
+            rlzu3006B: this.getSecureValue(annexesUnite, 'RLZU3006B'),
+            rlzu3007x: this.getSecureValue(annexesUnite, 'RLZU3007x'),
+            rlzu3101: this.getSecureValue(annexesUnite, 'RLZU3101'),
+            rlzu3102: this.getSecureValue(annexesUnite, 'RLZU3102'),
+            rlzu3103: this.getSecureValue(annexesUnite, 'RLZU3103'),
+            rlzu3104: this.getSecureValue(annexesUnite, 'RLZU3104'),
+            rlzu4001: this.getSecureValue(annexesUnite, 'RLZU4001'),
+            rlzu4002: this.getSecureValue(annexesUnite, 'RLZU4002')
         };
     }
 
     /**
      * Extraction des informations fiscales et répartitions
      */
-    extractFiscalInfo(rl0502, rl0503) {
+    extractFiscalInfo(mongoData) {
+        const rl0502 = this.getSecureValue(mongoData, 'RLUEx.RL0502', {});
+        const rl0503 = this.getSecureValue(mongoData, 'RLUEx.RL0503', {});
+        const rluex = this.getSecureValue(mongoData, 'RLUEx', {});
         return {
             // === RÉPARTITIONS FISCALES COMPLÈTES ===
             rl0502A: this.getSecureValue(rl0502, 'RL0502A'), // Pourcentage imposable
@@ -1553,14 +1755,25 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
             rl0502B: this.getSecureValue(rl0502, 'RL0502B'), // Code d'exonération
             rl0502C: this.getSecureValue(rl0502, 'RL0502C'), // Date d'exonération
             rl0503B: this.getSecureValue(rl0503, 'RL0503B'), // Description tarification
-            rl0503C: this.getSecureValue(rl0503, 'RL0503C')  // Facteur d'ajustement
+            rl0503C: this.getSecureValue(rl0503, 'RL0503C'), // Facteur d'ajustement
+
+            // Autres champs attendus par le template
+            rl0501A: this.getSecureValue(rluex, 'RL0501A'),
+            rl0508A: this.getSecureValue(rluex, 'RL0508A')
         };
     }
 
     /**
      * Extraction des sections spéciales RLZU
      */
-    extractSpecialSections(rlzu3001, rlzu5001) {
+    extractSpecialSections(mongoData) {
+        // RLZU3001 peut se trouver soit dans GLOBAL, soit dans UNITE selon les municipalités
+        const rlzu3001Global = this.getSecureValue(mongoData, 'RENSEIGNEMENTS_ANNEXABLES_GLOBAL.RLZU3001', {});
+        const rlzu3001Unite = this.getSecureValue(mongoData, 'RLUEx.RENSEIGNEMENTS_ANNEXABLES_UNITE.RLZU3001', {});
+        const rlzu3001 = (rlzu3001Global && Object.keys(rlzu3001Global).length) ? rlzu3001Global : rlzu3001Unite;
+
+        // RLZU5001: informations de copropriété (généralement globales)
+        const rlzu5001 = this.getSecureValue(mongoData, 'RENSEIGNEMENTS_ANNEXABLES_GLOBAL.RLZU5001', {});
         return {
             // === SECTIONS SPÉCIALES RLZU ===
             rlzu3001A: this.getSecureValue(rlzu3001, 'RLZU3001A'), // Autre superficie
@@ -1574,27 +1787,43 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
     }
     
     /**
-     * Fonction utilitaire pour l'accès sécurisé aux propriétés
+     * Fonction utilitaire améliorée pour l'accès sécurisé aux propriétés MongoDB
+     * Supporte les chemins imbriqués (ex: "RLUEx.RL0201.RL0201x.RL0201Ax")
      */
     getSecureValue(obj, path, defaultValue = 'Non disponible') {
         try {
             if (!obj) return defaultValue;
+            if (typeof path === 'string' && path.includes('.')) {
+                const parts = path.split('.');
+                let current = obj;
+                for (let i = 0; i < parts.length; i++) {
+                    if (current === null || current === undefined) return defaultValue;
+                    if (typeof current !== 'object') return defaultValue;
+                    current = current[parts[i]];
+                }
+                return (current !== null && current !== undefined) ? current : defaultValue;
+            }
             const value = obj[path];
-            return value !== null && value !== undefined ? value : defaultValue;
+            return (value !== null && value !== undefined) ? value : defaultValue;
         } catch (error) {
-
             return defaultValue;
         }
+    }
+
+    /**
+     * Diagnostic structure MongoDB pour identifier les données disponibles
+     */
+    debugMongoStructure(mongoData, label = 'Document MongoDB') {
+        // no-op in production; kept for occasional targeted diagnostics if needed
     }
     
     /**
      * Formatage des détails RL0504 (Détail des valeurs par usage)
      */
-    formatRL0504Details(rl0504x) {
+    formatRL0504DetailsFromArray(rl0504x) {
         if (!Array.isArray(rl0504x) || rl0504x.length === 0) {
             return [];
         }
-        
         return rl0504x.map((item, index) => ({
             id: index,
             codeTarification: this.getSecureValue(item, 'RL0504Ax'),
@@ -1797,6 +2026,156 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
         this.properties = [];
         this.showPropertyDetails = false;
         this.showNoResults = false;
+    }
+
+    // === Normalisation d'affichage ===
+    sanitizeDisplayValue(value) {
+        if (value === undefined || value === null) return '';
+        const str = String(value).trim();
+        if (!str) return '';
+        return str.toLowerCase() === 'non disponible' ? '' : str;
+    }
+
+    // === Fonctions utilitaires de traduction des codes (propriétaire) ===
+    getStatutImpositionLabel(code) {
+        const labels = {
+            '1': 'Personne physique',
+            '2': 'Personne morale'
+        };
+        return labels[code] || 'Non défini';
+    }
+
+    getConditionInscriptionLabel(code) {
+        const labels = {
+            '1': 'Propriétaire',
+            '2': 'Emphytéote',
+            '3': 'Copropriété divise',
+            '4': "Locataire terrain de l'État",
+            '5': "Occupant immeuble exempté",
+            '6': 'Bâtiment privé sur terrain public',
+            '7': 'Roulotte devenue immeuble',
+            '8': 'Copropriété indivise',
+            '9': 'Disposition spécifique'
+        };
+        return labels[code] || 'Non défini';
+    }
+
+    getTypeVoieLabel(code) {
+        const types = {
+            'AL': 'Allée', 'AR': 'Ancienne route', 'AT': 'Autoroute', 'AV': 'Avenue',
+            'BO': 'Boulevard', 'CA': 'Carré', 'CE': 'Cercle', 'CH': 'Chemin',
+            'CL': 'Circle', 'CO': 'Cours', 'CR': 'Croissant', 'CS': 'Concession',
+            'CT': 'Côte', 'DE': 'Desserte', 'DO': 'Domaine', 'DR': 'Drive',
+            'DS': 'Descente', 'EC': 'Échangeur', 'EP': 'Esplanade', 'GA': 'Garden',
+            'IM': 'Impasse', 'JA': 'Jardin', 'KO': 'Court', 'KR': 'Crescent',
+            'LC': 'Lac', 'LN': 'Lane', 'MO': 'Montée', 'PL': 'Place',
+            'PR': 'Promenade', 'PS': 'Plateau', 'PU': 'Plateau', 'RA': 'Rang',
+            'RD': 'Road', 'RG': 'Ridge', 'RL': 'Ruelle', 'RO': 'Route',
+            'RU': 'Rue', 'SN': 'Sentier', 'SQ': 'Square', 'ST': 'Street',
+            'TA': 'Terrace', 'TC': 'Trait-carré', 'TE': 'Terrasse', 'TL': 'Trail',
+            'TV': 'Traverse', 'VO': 'Voie'
+        };
+        if (!code) return '';
+        return types[String(code).toUpperCase()] || code;
+    }
+
+    getLienAdresseLabel(code) {
+        const liens = {
+            'A': 'à', 'B': `à l'`, 'C': 'à la', 'D': 'au', 'E': 'aux',
+            'F': 'chez', 'G': 'chez les', 'H': `d'`, 'I': `d'en`,
+            'J': `de l'`, 'K': `de l'`, 'L': 'de la', 'M': 'des',
+            'N': 'du', 'O': 'en', 'P': 'l', 'Q': 'la', 'R': 'le',
+            'S': 'les', 'T': 'sur', 'U': `sur l'`, 'V': 'sur la',
+            'W': 'sur les', 'X': 'sur les'
+        };
+        if (!code) return '';
+        return liens[String(code).toUpperCase()] || code;
+    }
+
+    // === Traduction code d'utilisation prédominante (RL0105A) ===
+    getUtilisationLabel(code) {
+        if (!code) return '';
+        const map = {
+            '1000': 'Résidentiel',
+            '2000': 'Agricole',
+            '3000': 'Forestier',
+            '4000': 'Infrastructure',
+            '5000': 'Commercial',
+            '6000': 'Services'
+        };
+        const key = String(code);
+        return map[key] || '';
+    }
+
+    // === Traduction type de construction (RL0307B) ===
+    getConstructionTypeLabel(code) {
+        if (!code) return '';
+        const map = { 'R': 'Rénovation', 'N': 'Neuf', 'E': 'Existant' };
+        const key = String(code).toUpperCase();
+        return map[key] || '';
+    }
+
+    // === Traduction zonage agricole (RL0303A) ===
+    getZonageAgricoleLabel(code) {
+        if (!code && code !== 0) return '';
+        const map = { '0': 'Non zoné', '1': 'Partiellement zoné', '2': 'Entièrement zoné' };
+        const key = String(code);
+        return map[key] || '';
+    }
+
+    // === Formatage nombre (fr-CA) ===
+    formatNumber(value) {
+        if (value === undefined || value === null) return '';
+        const str = String(value).replace(/\s/g, '').replace(/\u00A0/g, '');
+        const num = Number(str.replace(',', '.'));
+        if (Number.isFinite(num)) {
+            try {
+                return new Intl.NumberFormat('fr-CA').format(num);
+            } catch (_e) {
+                return String(num);
+            }
+        }
+        return this.sanitizeDisplayValue(value);
+    }
+    
+    // === Détermination si on doit utiliser l'adresse structurée pour tous les propriétaires ===
+    get shouldUseStructuredAddress() {
+        try {
+            const ownersRaw = this.properties && this.properties[0] && this.properties[0].RL0201x ? this.properties[0].RL0201x : [];
+            if (!ownersRaw || ownersRaw.length === 0) return false;
+            return ownersRaw.every(owner => owner && owner.RL0201Ix && owner.RL0201Kx && owner.RL0201Mx);
+        } catch (e) {
+            return false;
+        }
+    }
+
+    // === Adresse unifiée selon la règle de cohérence ===
+    getUnifiedAddress(ownerData) {
+        if (!ownerData) return '';
+        if (this.shouldUseStructuredAddress) {
+            const parts = [];
+            if (ownerData.RL0201Ix) parts.push(ownerData.RL0201Ix);
+            if (ownerData.RL0201Kx) parts.push(this.getTypeVoieLabel(ownerData.RL0201Kx));
+            if (ownerData.RL0201Lx) parts.push(this.getLienAdresseLabel(ownerData.RL0201Lx));
+            if (ownerData.RL0201Mx) parts.push(ownerData.RL0201Mx);
+            return parts.join(' ');
+        }
+        return ownerData.RL0201Cx || '';
+    }
+
+    // === Nom formaté propriétaire (Prénom Nom si personne physique et données complètes) ===
+    getFormattedOwnerName(ownerData) {
+        try {
+            const statut = this.sanitizeDisplayValue(ownerData && ownerData.RL0201Hx);
+            const nom = this.sanitizeDisplayValue(ownerData && ownerData.RL0201Ax);
+            const prenom = this.sanitizeDisplayValue(ownerData && ownerData.RL0201Bx);
+            if (statut === '1' && nom && prenom) {
+                return `${prenom} ${nom}`;
+            }
+            return nom || '';
+        } catch (e) {
+            return '';
+        }
     }
     
     // Méthodes de compatibilité pour maintenir l'API existante
@@ -2088,7 +2467,7 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
      * Formatage de l'adresse du propriétaire
      */
     formatOwnerAddress(adresse) {
-        if (!adresse) return 'Non disponible';
+        if (!adresse) return '';
         
         let parts = [];
         
@@ -2104,10 +2483,11 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
         // Voie publique avec code générique
         if (adresse.nomVoiePublique) {
             let voie = '';
-            if (adresse.codeGenerique && adresse.codeGenerique !== 'BO') {
-                voie = `${adresse.codeGenerique} ${adresse.nomVoiePublique}`;
+            const typeVoie = this.getTypeVoieLabel(adresse.codeGenerique);
+            if (typeVoie) {
+                voie = `${typeVoie} ${adresse.nomVoiePublique}`;
             } else {
-                voie = `BOUL ${adresse.nomVoiePublique}`;
+                voie = adresse.nomVoiePublique;
             }
             
             // Point cardinal
@@ -2151,7 +2531,7 @@ export default class PropertySearch extends NavigationMixin(LightningElement) {
             adresseComplete += `, ${adresse.pays}`;
         }
         
-        return adresseComplete || adresse.adresseNonStructuree || 'Non disponible';
+        return adresseComplete || adresse.adresseNonStructuree || '';
     }
 
     /**

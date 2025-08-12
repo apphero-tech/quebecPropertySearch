@@ -275,8 +275,9 @@
                             <!-- CARD POUR CHAQUE PROPRIÉTÉ -->
                             <lightning-card icon-name="standard:address">
                                 <div slot="title">
-                                    <div class="slds-text-heading_medium slds-m-bottom_x-small">{property.addressLine1}</div>
-                                    <div class="slds-text-body_regular slds-text-color_weak">{property.addressLine2}</div>
+                                    <div class="property-header">
+                                        <h2 class="property-address slds-text-heading_medium">{property.formattedPropertyAddress}</h2>
+                                    </div>
                                 </div>
                                 
                                 <!-- ACCORDÉON AVEC TOUTES LES SECTIONS -->
@@ -285,419 +286,214 @@
                                     <!-- SECTION 1 : Identification de l'unité d'évaluation -->
                                     <lightning-accordion-section name="section1" label="📍 Section 1 : Identification de l'unité d'évaluation">
                                         <div class="slds-p-around_medium">
-                                            
-                                            <!-- Adresse formatée Canada Poste -->
-                                            <div class="slds-box slds-m-bottom_medium slds-theme_shade">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">📮 Adresse de la propriété</h4>
-                                                <div class="slds-p-around_small">
-                                                    <p class="slds-text-heading_small slds-m-bottom_x-small">{property.addressLine1}</p>
-                                                    <p class="slds-text-body_regular slds-text-color_weak">{property.addressLine2}</p>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Informations générales -->
+                                            <!-- Dossier et classification -->
                                             <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">📋 Informations générales</h4>
-                                                <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Version :</strong> {property.version}</p>
-                                                        <p><strong>Code municipalité :</strong> {property.codeMunicipalite}</p>
-                                                        <p><strong>Année du rôle :</strong> {property.anneeRole}</p>
-                                                        <p><strong>Code type rôle :</strong> {property.rlm03A}</p>
-                                                        <p><strong>Date création rôle :</strong> {property.rlm04A}</p>
-                                                    </div>
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Code postal :</strong> {property.postalCode}</p>
-                                                        <p><strong>Code statut rôle :</strong> {property.rlm05A}</p>
-                                                        <p><strong>Code version rôle :</strong> {property.rlm06A}</p>
-                                                        <p><strong>Code organisme responsable :</strong> {property.rlm07A}</p>
-                                                    </div>
-                                                </div>
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Dossier et classification</h4>
+                                                <template if:true={property.displayNumeroDossier}>
+                                                    <p><strong>Numéro de dossier :</strong> <span data-field="matricule">{property.displayNumeroDossier}</span></p>
+                                                                    </template>
+                                                <template if:true={property.displayUtilisation}>
+                                                    <p><strong>Utilisation :</strong> {property.displayUtilisation}</p>
+                                                                        </template>
+                                                <template if:true={property.displayUniteVoisinage}>
+                                                    <p><strong>Unité de voisinage :</strong> {property.displayUniteVoisinage}</p>
+                                                                            </template>
                                             </div>
                                             
-                                            <!-- Groupe Adresse (RL0101x) -->
+                                            <!-- Informations du rôle -->
                                             <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">🏠 Groupe Adresse (RL0101x)</h4>
-                                                <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Numéro civique :</strong> {property.rl0101Ax}</p>
-                                                        <p><strong>Fraction numéro inférieur :</strong> {property.rl0101Bx}</p>
-                                                        <p><strong>Numéro supérieur :</strong> {property.rl0101Cx}</p>
-                                                        <p><strong>Fraction numéro supérieur :</strong> {property.rl0101Dx}</p>
-                                                        <p><strong>Code générique (type rue) :</strong> {property.rl0101Ex}</p>
-                                                    </div>
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Code de lien :</strong> {property.rl0101Fx}</p>
-                                                        <p><strong>Nom voie publique :</strong> {property.rl0101Gx}</p>
-                                                        <p><strong>Point cardinal :</strong> {property.rl0101Hx}</p>
-                                                        <p><strong>Numéro appartement/local :</strong> {property.rl0101Ix}</p>
-                                                        <p><strong>Partie complémentaire :</strong> {property.rl0101Jx}</p>
-                                                    </div>
-                                                </div>
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Informations du rôle</h4>
+                                                <template if:true={property.displayVersion}>
+                                                    <p><strong>Version :</strong> {property.displayVersion}</p>
+                                                                    </template>
+                                                <template if:true={property.displayCodeMunicipalite}>
+                                                    <p><strong>Code municipalité :</strong> {property.displayCodeMunicipalite}</p>
+                                                                    </template>
+                                                <template if:true={property.displayAnneeRole}>
+                                                    <p><strong>Année du rôle :</strong> {property.displayAnneeRole}</p>
+                                                            </template>
                                             </div>
                                             
-                                            <!-- Groupe Numéro de dossier (RL0103x) -->
+                                            <!-- Identification cadastrale -->
                                             <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">📁 Groupe Numéro de dossier (RL0103x)</h4>
-                                                <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Numéro de dossier :</strong> {property.rl0103Ax}</p>
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Identification cadastrale</h4>
+                                                <template if:true={property.displayRl0104A}>
+                                                    <p><strong>Division :</strong> {property.displayRl0104A}</p>
+                                                                        </template>
+                                                <template if:true={property.displayRl0104B}>
+                                                    <p><strong>Section :</strong> {property.displayRl0104B}</p>
+                                                                            </template>
+                                                <template if:true={property.displayRl0104C}>
+                                                    <p><strong>Emplacement :</strong> {property.displayRl0104C}</p>
+                                                                                </template>
+                                                <template if:true={property.displayRl0104G}>
+                                                    <p><strong>Numéro du fuseau :</strong> {property.displayRl0104G}</p>
+                                                                                </template>
+                                                <template if:true={property.displayRl0104D}>
+                                                    <p><strong>Chiffre autovérificateur :</strong> {property.displayRl0104D}</p>
+                                                                        </template>
                                                     </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Groupe Détails cadastraux (RL0104) -->
-                                            <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">🗺️ Groupe Détails cadastraux (RL0104)</h4>
-                                                <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Numéro de lot :</strong> {property.rl0104A}</p>
-                                                        <p><strong>Partie de lot :</strong> {property.rl0104B}</p>
-                                                        <p><strong>Rang/Concession :</strong> {property.rl0104C}</p>
-                                                        <p><strong>Subdivision :</strong> {property.rl0104D}</p>
-                                                    </div>
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Numéro bâtiment :</strong> {property.rl0104E}</p>
-                                                        <p><strong>Numéro local :</strong> {property.rl0104F}</p>
-                                                        <p><strong>Code géographique :</strong> {property.rl0104G}</p>
-                                                        <p><strong>Discriminant :</strong> {property.rl0104H}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Autres informations d'identification -->
-                                            <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">🔍 Autres informations d'identification</h4>
-                                                <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Code d'utilisation :</strong> {property.rl0105A}</p>
-                                                        <p><strong>Matricule :</strong> {property.rl0106A}</p>
-                                                        <p><strong>Code de l'évaluateur :</strong> {property.rl0107A}</p>
-                                                        <p><strong>Code type propriété :</strong> {property.rl0108A}</p>
-                                                        <p><strong>Code statut propriété :</strong> {property.rl0109A}</p>
-                                                    </div>
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Code zone spéciale :</strong> {property.rl0110A}</p>
-                                                        <p><strong>Code restriction :</strong> {property.rl0111A}</p>
-                                                        <p><strong>Code environnement :</strong> {property.rl0112A}</p>
-                                                        <p><strong>Code type rôle :</strong> {property.rlm03A}</p>
-                                                        <p><strong>Date création rôle :</strong> {property.rlm04A}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
                                         </div>
                                     </lightning-accordion-section>
                                     
                                     <!-- SECTION 2 : Identification du propriétaire -->
                                     <lightning-accordion-section name="section2" label="👤 Section 2 : Identification du propriétaire">
                                         <div class="slds-p-around_medium">
-                                            
-                                            <!-- Groupe Identité du propriétaire (RL0201x) - prise en charge multiples -->
-                                            <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">👤 Groupe Identité du propriétaire (RL0201x)</h4>
-                                                <div class="slds-grid slds-wrap slds-gutters">
-                                                    <!-- Cas exactement 2 propriétaires: utiliser les 2 colonnes de la grille principale -->
-                                                    <template if:true={property.owners}>
-                                                        <template if:true={property.hasTwoOwners}>
-                                                            <template for:each={property.owners} for:item="owner">
-                                                                <div key={owner.id} class="slds-col slds-size_1-of-2">
-                                                                    <p class="slds-text-body_regular slds-m-bottom_x-small">
-                                                                        <strong>{owner.fullName}</strong>
-                                                                    </p>
-                                                                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">
-                                                                        {owner.statutLabel}
-                                                                    </p>
-
-                                                                    <!-- Adresse complète formatée -->
-                                                                    <template if:true={owner.adresseFormatee}>
-                                                                        <p class="slds-text-body_small slds-m-bottom_x-small">{owner.adresseFormatee}</p>
+                                            <!-- Un encart par propriétaire, empilés -->
+                                            <template for:each={property.formattedOwners} for:item="owner">
+                                                <div key={owner.id} class="slds-box slds-m-bottom_medium">
+                                                    <p class="slds-text-title_bold slds-m-bottom_x-small">{owner.formattedName}</p>
+                                                    <template if:true={owner.ownerTypeText}>
+                                                        <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">{owner.ownerTypeText}</p>
                                                                     </template>
-                                                                    <template if:false={owner.adresseFormatee}>
-                                                                        <!-- Fallback vers l'ancien format si adresseFormatee n'est pas disponible -->
-                                                                        <template if:true={owner.adressePostale}>
-                                                                            <p class="slds-text-body_small slds-m-bottom_x-small">{owner.adressePostale}</p>
+                                                    <template if:true={owner.fullAddress}>
+                                                        <p class="slds-text-body_small slds-m-bottom_x-small">{owner.fullAddress}</p>
                                                                         </template>
-                                                                        <template if:false={owner.adressePostale}>
-                                                                            <template if:true={owner.adresse.numeroCivique}>
-                                                                                <p class="slds-text-body_small slds-m-bottom_x-small">
-                                                                                    {owner.adresse.numeroCivique} {owner.adresse.nomVoiePublique}
-                                                                                    <template if:true={owner.adresse.codeGenerique}> ({owner.adresse.codeGenerique})</template>
-                                                                                </p>
-                                                                            </template>
-                                                                        </template>
-                                                                    </template>
-
-                                                                    <template if:true={owner.adresse.municipalite}>
-                                                                        <p class="slds-text-body_small slds-m-bottom_x-small">
-                                                                            {owner.adresse.municipalite}
-                                                                            <template if:true={owner.adresse.codePostal}> {owner.adresse.codePostal}</template>
-                                                                        </p>
-                                                                    </template>
-
-                                                                    <template if:true={owner.adresse.province}>
-                                                                        <p class="slds-text-body_small slds-m-bottom_x-small">{owner.adresse.province}</p>
-                                                                    </template>
-
-                                                                    <!-- Case postale si présente -->
-                                                                    <template if:true={owner.adresse.casePostale}>
-                                                                        <p class="slds-text-body_small slds-m-bottom_x-small">
-                                                                            C.P. {owner.adresse.casePostale}
-                                                                            <template if:true={owner.adresse.succursalePostale}> Succ. {owner.adresse.succursalePostale}</template>
-                                                                        </p>
-                                                                    </template>
-
-                                                                    <template if:true={owner.dateInscription}>
-                                                                        <p class="slds-text-body_small slds-text-color_weak">
-                                                                            Inscrit depuis : {owner.dateInscriptionFormatted}
-                                                                        </p>
+                                                    <template if:true={owner.registrationDate}>
+                                                        <p class="slds-text-body_small slds-text-color_weak">Inscrit: {owner.registrationDate}</p>
                                                                     </template>
                                                                 </div>
                                                             </template>
-                                                        </template>
-
-                                                        <!-- Cas 1 propriétaire ou 3+ propriétaires: colonne gauche avec liste verticale, colonne droite pour condition -->
-                                                        <template if:false={property.hasTwoOwners}>
-                                                            <div class="slds-col slds-size_1-of-2">
-                                                                <h4 class="slds-text-heading_small slds-m-bottom_x-small">
-                                                                    <template if:true={property.hasMultipleOwners}>Propriétaires</template>
-                                                                    <template if:false={property.hasMultipleOwners}>Propriétaire</template>
-                                                                </h4>
-
-                                                                <template for:each={property.owners} for:item="owner">
-                                                                    <div key={owner.id} class="slds-m-bottom_small">
-                                                                        <p class="slds-text-body_regular">
-                                                                            <strong>{owner.fullName}</strong>
-                                                                        </p>
-                                                                        <p class="slds-text-body_small slds-text-color_weak">
-                                                                            {owner.statutLabel}
-                                                                        </p>
-
-                                                                        <!-- Adresse complète formatée -->
-                                                                        <template if:true={owner.adresseFormatee}>
-                                                                            <p class="slds-text-body_small">{owner.adresseFormatee}</p>
-                                                                        </template>
-                                                                        <template if:false={owner.adresseFormatee}>
-                                                                            <!-- Fallback vers l'ancien format si adresseFormatee n'est pas disponible -->
-                                                                            <template if:true={owner.adressePostale}>
-                                                                                <p class="slds-text-body_small">{owner.adressePostale}</p>
-                                                                            </template>
-                                                                            <template if:false={owner.adressePostale}>
-                                                                                <template if:true={owner.adresse.numeroCivique}>
-                                                                                    <p class="slds-text-body_small">
-                                                                                        {owner.adresse.numeroCivique} {owner.adresse.nomVoiePublique}
-                                                                                        <template if:true={owner.adresse.codeGenerique}> ({owner.adresse.codeGenerique})</template>
-                                                                                    </p>
-                                                                                </template>
-                                                                            </template>
-                                                                        </template>
-
-                                                                        <template if:true={owner.adresse.municipalite}>
-                                                                            <p class="slds-text-body_small">
-                                                                                {owner.adresse.municipalite}
-                                                                                <template if:true={owner.adresse.codePostal}> {owner.adresse.codePostal}</template>
-                                                                            </p>
-                                                                        </template>
-
-                                                                        <template if:true={owner.adresse.province}>
-                                                                            <p class="slds-text-body_small">{owner.adresse.province}</p>
-                                                                        </template>
-
-                                                                        <!-- Case postale si présente -->
-                                                                        <template if:true={owner.adresse.casePostale}>
-                                                                            <p class="slds-text-body_small">
-                                                                                C.P. {owner.adresse.casePostale}
-                                                                                <template if:true={owner.adresse.succursalePostale}> Succ. {owner.adresse.succursalePostale}</template>
-                                                                            </p>
-                                                                        </template>
-
-                                                                        <template if:true={owner.dateInscription}>
-                                                                            <p class="slds-text-body_small slds-text-color_weak">
-                                                                                Inscrit depuis : {owner.dateInscriptionFormatted}
-                                                                            </p>
-                                                                        </template>
-                                                                    </div>
-                                                                </template>
-
-                                                                <template if:false={property.owners}>
-                                                                    <p class="slds-text-body_regular slds-text-color_weak">
-                                                                        Informations du propriétaire non disponibles
-                                                                    </p>
-                                                                </template>
-                                                            </div>
-
-                                                            <div class="slds-col slds-size_1-of-2">
-                                                                <template if:true={property.hasSpecialCondition}>
-                                                                    <p class="slds-text-body_small slds-text-color_weak">
-                                                                        Condition particulière : {property.conditionInscriptionText}
-                                                                    </p>
-                                                                </template>
-                                                            </div>
-                                                        </template>
-                                                    </template>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Informations supplémentaires propriétaire -->
-                                            <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">📊 Informations supplémentaires propriétaire</h4>
-                                                <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Condition d'inscription :</strong> {property.conditionInscription}</p>
-                                                        <p><strong>Code des conditions :</strong> {property.rl0201U}</p>
-                                                    </div>
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <template if:true={property.hasSpecialCondition}>
-                                                            <p><strong>Condition particulière :</strong> {property.conditionInscriptionText}</p>
-                                                        </template>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
                                         </div>
                                     </lightning-accordion-section>
                                     
                                     <!-- SECTION 3 : Caractéristiques de l'unité d'évaluation -->
-                                    <lightning-accordion-section name="section3" label="🌍 Section 3 : Caractéristiques de l'unité d'évaluation">
+                                    <lightning-accordion-section if:true={property.section3Visible} name="section3" label="🌍 Section 3 : Caractéristiques de l'unité d'évaluation">
                                         <div class="slds-p-around_medium">
-                                            
-                                            <!-- Groupe Superficie de l'immeuble -->
+                                            <!-- Bâtiment principal -->
                                             <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">📏 Groupe Superficie de l'immeuble</h4>
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Bâtiment principal</h4>
                                                 <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Superficie du terrain :</strong> {property.rl0301A}</p>
-                                                        <p><strong>Code unité de mesure :</strong> {property.rl0301B}</p>
-                                                        <p><strong>Superficie du terrain en mètres carrés :</strong> {property.rl0301C}</p>
-                                                        <p><strong>Superficie du terrain en pieds carrés :</strong> {property.rl0301D}</p>
-                                                        <p><strong>Superficie du terrain en acres :</strong> {property.rl0301E}</p>
-                                                        <p><strong>Superficie du terrain en hectares :</strong> {property.rl0301F}</p>
+                                                    <div class="slds-col slds-size_1-of-2 slds-max-small-size_1-of-1">
+                                                        <template if:true={property.displayRl0306A}>
+                                                            <p><strong>Nombre d'étages :</strong> {property.displayRl0306A}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRl0307A}>
+                                                            <p><strong>Année de construction :</strong> {property.displayRl0307A}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRl0307B}>
+                                                            <p><strong>Type de construction :</strong> {property.displayRl0307B}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRl0317A}>
+                                                            <p><strong>Superficie bâtiment :</strong> {property.displayRl0317A}</p>
+                                                        </template>
                                                     </div>
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Superficie du terrain en arpents :</strong> {property.rl0301G}</p>
-                                                        <p><strong>Superficie du terrain en verges carrées :</strong> {property.rl0301H}</p>
-                                                        <p><strong>Superficie du terrain en toises carrées :</strong> {property.rl0301I}</p>
-                                                        <p><strong>Superficie du terrain en perches carrées :</strong> {property.rl0301J}</p>
-                                                        <p><strong>Superficie du terrain en chaînes carrées :</strong> {property.rl0301K}</p>
-                                                        <p><strong>Superficie du terrain en roods :</strong> {property.rl0301L}</p>
+                                                </div>
+                                                                    </div>
+
+                                            <!-- Terrain -->
+                                            <div class="slds-box slds-m-bottom_medium">
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Terrain</h4>
+                                                <div class="slds-grid slds-wrap slds-gutters">
+                                                    <div class="slds-col slds-size_1-of-2 slds-max-small-size_1-of-1">
+                                                        <template if:true={property.displayRl0301A}>
+                                                            <p><strong>Mesure frontale :</strong> {property.displayRl0301A}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRl0302A}>
+                                                            <p><strong>Superficie du terrain :</strong> {property.displayRl0302A}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRl0303A}>
+                                                            <p><strong>Zonage agricole :</strong> {property.displayRl0303A}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRl0305A}>
+                                                            <p><strong>Superficie en zone agricole :</strong> {property.displayRl0305A}</p>
+                                                        </template>
                                                     </div>
                                                 </div>
                                             </div>
                                             
-                                            <!-- Groupe Caractéristiques du bâtiment principal -->
+                                            <!-- Autres caractéristiques -->
                                             <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">🏗️ Groupe Caractéristiques du bâtiment principal</h4>
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Autres caractéristiques</h4>
                                                 <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Nombre maximal d'étages :</strong> {property.rl0306A}</p>
-                                                        <p><strong>Année construction originelle :</strong> {property.rl0307A}</p>
-                                                        <p><strong>Mention réelle/estimée :</strong> {property.rl0307B}</p>
-                                                        <p><strong>Aire d'étages :</strong> {property.rl0308A}</p>
-                                                        <p><strong>Nombre d'étages :</strong> {property.rl0311A}</p>
-                                                        <p><strong>Nombre d'unités locatives :</strong> {property.rl0312A}</p>
-                                                    </div>
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Code lien physique :</strong> {property.rl0309A}</p>
-                                                        <p><strong>Code genre construction :</strong> {property.rl0310A}</p>
-                                                        <p><strong>Code d'utilisation :</strong> {property.rl0313A}</p>
-                                                        <p><strong>Superficie bâtiment :</strong> {property.rl0317A}</p>
-                                                        <p><strong>Code type construction :</strong> {property.rl0318A}</p>
-                                                        <p><strong>Code qualité construction :</strong> {property.rl0319A}</p>
+                                                    <div class="slds-col slds-size_1-of-2 slds-max-small-size_1-of-1">
+                                                        <template if:true={property.displayRl0309A}>
+                                                            <p><strong>Nombre de logements :</strong> {property.displayRl0309A}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRl0310A}>
+                                                            <p><strong>Nombre de pièces :</strong> {property.displayRl0310A}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRl0311A}>
+                                                            <p><strong>Nombre de salles de bain :</strong> {property.displayRl0311A}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRl0312A}>
+                                                            <p><strong>Nombre de foyers :</strong> {property.displayRl0312A}</p>
+                                                        </template>
                                                     </div>
                                                 </div>
-                                            </div>
-                                            
-                                            <!-- Caractéristiques supplémentaires -->
-                                            <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">🔧 Caractéristiques supplémentaires</h4>
-                                                <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Code accessibilité :</strong> {property.rl0321A}</p>
-                                                        <p><strong>Code équipements spéciaux :</strong> {property.rl0322A}</p>
-                                                        <p><strong>Code restrictions :</strong> {property.rl0323A}</p>
                                                     </div>
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Code environnement :</strong> {property.rl0324A}</p>
-                                                        <p><strong>Superficie exploitation agricole non exploitée :</strong> {property.rl0320A}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Groupe Caractéristiques du terrain -->
-                                            <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">🌱 Groupe Caractéristiques du terrain</h4>
-                                                <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Dimension linéaire/mesure frontale :</strong> {property.rl0302A}</p>
-                                                        <p><strong>Code zonage agricole :</strong> {property.rl0303A}</p>
-                                                        <p><strong>Superficie exploitation agricole totale :</strong> {property.rl0304A}</p>
-                                                        <p><strong>Superficie exploitation agricole en zone :</strong> {property.rl0305A}</p>
-                                                        <p><strong>Superficie imposition maximale :</strong> {property.rl0314A}</p>
-                                                    </div>
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Superficie vocation forestière totale :</strong> {property.rl0315A}</p>
-                                                        <p><strong>Superficie vocation forestière en zone agricole :</strong> {property.rl0316A}</p>
-                                                        <p><strong>Superficie agricole exploitable non exploitée :</strong> {property.rl0320A}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
                                         </div>
                                     </lightning-accordion-section>
                                     
                                     <!-- SECTION 4 : Valeurs au rôle d'évaluation -->
                                     <lightning-accordion-section name="section4" label="💰 Section 4 : Valeurs au rôle d'évaluation">
                                         <div class="slds-p-around_medium">
-                                            
-                                            <!-- Groupe Information de référence -->
+                                            <!-- Informations de référence -->
                                             <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">📅 Groupe Information de référence</h4>
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Informations de référence</h4>
+                                                <template if:true={property.displayRl0401A}>
+                                                    <p><strong>Date de référence au marché :</strong> {property.displayRl0401A}</p>
+                                                </template>
+                                            </div>
+                                            
+                                            <!-- Valeurs en vigueur -->
+                                            <div class="slds-box slds-m-bottom_medium">
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Valeurs en vigueur</h4>
                                                 <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Date de référence des conditions du marché :</strong> {property.rl0401A}</p>
+                                                    <div class="slds-col slds-size_1-of-2 slds-max-small-size_1-of-1">
+                                                        <template if:true={property.displayRl0402A}>
+                                                            <p><strong>Valeur du terrain :</strong> {property.displayRl0402A}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRl0403A}>
+                                                            <p><strong>Valeur du bâtiment :</strong> {property.displayRl0403A}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRl0411A}>
+                                                            <p><strong>Valeur unitaire terrain :</strong> {property.displayRl0411A}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRl0412A}>
+                                                            <p><strong>Valeur unitaire bâtiment :</strong> {property.displayRl0412A}</p>
+                                                        </template>
+                                                    </div>
+                                                    <div class="slds-col slds-size_1-of-2 slds-max-small-size_1-of-1">
+                                                        <template if:true={property.displayRl0404A}>
+                                                            <p><strong>Valeur totale de l'immeuble :</strong> <span data-field="total-value">{property.displayRl0404A}</span></p>
+                                                        </template>
                                                     </div>
                                                 </div>
                                             </div>
                                             
-                                            <!-- Groupe Valeurs au rôle en vigueur -->
+                                            <!-- Valeur comparative -->
                                             <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">💵 Groupe Valeurs au rôle en vigueur</h4>
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Valeur comparative</h4>
                                                 <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Valeur du terrain inscrite au rôle :</strong> {property.rl0402A}</p>
-                                                        <p><strong>Valeur du/des bâtiments inscrite au rôle :</strong> {property.rl0403A}</p>
-                                                        <p><strong>Valeur unitaire terrain :</strong> {property.rl0411A}</p>
-                                                        <p><strong>Valeur unitaire bâtiment :</strong> {property.rl0412A}</p>
+                                                    <div class="slds-col slds-size_1-of-2 slds-max-small-size_1-of-1">
+                                                        <template if:true={property.displayRl0405A}>
+                                                            <p><strong>Valeur au rôle antérieur :</strong> {property.displayRl0405A}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRl0406A}>
+                                                            <p><strong>Code d'exonération :</strong> {property.displayRl0406A}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRl0407A}>
+                                                            <p><strong>Code de classification :</strong> {property.displayRl0407A}</p>
+                                                        </template>
                                                     </div>
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Valeur totale de l'immeuble inscrite au rôle :</strong> {property.rl0404A}</p>
-                                                        <p><strong>Valeur de marché estimée :</strong> {property.rl0413A}</p>
-                                                        <p><strong>Valeur d'assurance :</strong> {property.rl0414A}</p>
-                                                        <p><strong>Valeur de remplacement :</strong> {property.rl0415A}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Groupe Valeur comparative -->
-                                            <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">📊 Groupe Valeur comparative</h4>
-                                                <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Valeur du même immeuble au rôle antérieur :</strong> {property.rl0405A}</p>
-                                                        <p><strong>Code d'exonération :</strong> {property.rl0406A}</p>
-                                                        <p><strong>Code de classification :</strong> {property.rl0407A}</p>
-                                                    </div>
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Code de facteur d'ajustement :</strong> {property.rl0408A}</p>
-                                                        <p><strong>Facteur d'ajustement :</strong> {property.rl0409A}</p>
-                                                        <p><strong>Code de facteur d'ajustement :</strong> {property.rl0410A}</p>
+                                                    <div class="slds-col slds-size_1-of-2 slds-max-small-size_1-of-1">
+                                                        <template if:true={property.displayRl0408A}>
+                                                            <p><strong>Code de facteur d'ajustement :</strong> {property.displayRl0408A}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRl0409A}>
+                                                            <p><strong>Facteur d'ajustement :</strong> {property.displayRl0409A}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRl0410A}>
+                                                            <p><strong>Code de facteur d'ajustement :</strong> {property.displayRl0410A}</p>
+                                                        </template>
                                                     </div>
                                                 </div>
                                             </div>
                                             
                                             <!-- Détail des valeurs par usage (RL0504x) -->
                                             <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">📋 Détail des valeurs par usage (RL0504x)</h4>
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">📋 Détail des valeurs par usage</h4>
                                                 <template if:true={property.rl0504Details}>
                                                     <template if:true={property.rl0504Details.length}>
                                                         <lightning-datatable
@@ -719,113 +515,137 @@
                                     <!-- SECTION 5 : Répartition fiscale -->
                                     <lightning-accordion-section name="section5" label="🏛️ Section 5 : Répartition fiscale">
                                         <div class="slds-p-around_medium">
-                                            
-                                            <!-- Groupe Catégories de base -->
+                                            <!-- Catégories de base -->
                                             <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">📋 Groupe Catégories de base</h4>
-                                                <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Terrains vagues desservis :</strong> {property.rl0501A}</p>
-                                                        <p><strong>Classe immeubles non résidentiels :</strong> {property.rl0502A}</p>
-                                                        <p><strong>Pourcentage imposable :</strong> {property.rl0502A}</p>
-                                                        <p><strong>Code d'exonération :</strong> {property.rl0502B}</p>
-                                                        <p><strong>Date d'exonération :</strong> {property.rl0502C}</p>
-                                                    </div>
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Classe immeubles industriels :</strong> {property.rl0503A}</p>
-                                                        <p><strong>Code tarification :</strong> {property.rl0503A}</p>
-                                                        <p><strong>Description tarification :</strong> {property.rl0503B}</p>
-                                                        <p><strong>Facteur d'ajustement :</strong> {property.rl0503C}</p>
-                                                    </div>
-                                                </div>
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Catégories de base</h4>
+                                                <template if:true={property.displayRl0501A}>
+                                                    <p><strong>Terrains vagues desservis :</strong> {property.displayRl0501A}</p>
+                                                </template>
+                                                <template if:true={property.displayRl0502A}>
+                                                    <p><strong>Classe immeubles non résidentiels :</strong> {property.displayRl0502A}</p>
+                                                </template>
+                                                <template if:true={property.displayRl0502A}>
+                                                    <p><strong>Pourcentage imposable :</strong> {property.displayRl0502A}</p>
+                                                </template>
+                                                <template if:true={property.displayRl0502B}>
+                                                    <p><strong>Code d'exonération :</strong> {property.displayRl0502B}</p>
+                                                </template>
+                                                <template if:true={property.displayRl0502C}>
+                                                    <p><strong>Date d'exonération :</strong> {property.displayRl0502C}</p>
+                                                </template>
+                                                <template if:true={property.displayRl0503A}>
+                                                    <p><strong>Classe immeubles industriels :</strong> {property.displayRl0503A}</p>
+                                                </template>
+                                                <template if:true={property.displayRl0503B}>
+                                                    <p><strong>Description tarification :</strong> {property.displayRl0503B}</p>
+                                                </template>
+                                                <template if:true={property.displayRl0503C}>
+                                                    <p><strong>Facteur d'ajustement :</strong> {property.displayRl0503C}</p>
+                                                </template>
                                             </div>
                                             
-                                            <!-- Groupe Secteur -->
+                                            <!-- Secteur -->
                                             <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">🏘️ Groupe Secteur</h4>
-                                                <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Code du secteur pour taxation :</strong> {property.rl0508A}</p>
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Secteur</h4>
+                                                <template if:true={property.displayRl0508A}>
+                                                    <p><strong>Code du secteur pour taxation :</strong> {property.displayRl0508A}</p>
+                                                </template>
                                                     </div>
-                                                </div>
-                                            </div>
-                                            
                                         </div>
                                     </lightning-accordion-section>
                                     
                                     <!-- SECTION 6 : Déclaration de dépôt du rôle par l'évaluateur -->
                                     <lightning-accordion-section name="section6" label="📝 Section 6 : Déclaration de dépôt du rôle par l'évaluateur">
                                         <div class="slds-p-around_medium">
-                                            
-                                            <!-- Groupe Identité de l'évaluateur -->
+                                            <!-- Évaluateur responsable -->
                                             <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">👤 Groupe Identité de l'évaluateur</h4>
-                                                <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Nom de l'évaluateur signataire du rôle :</strong> {property.rl0601A}</p>
-                                                        <p><strong>Prénom de l'évaluateur signataire du rôle :</strong> {property.rl0601B}</p>
-                                                        <p><strong>Code statut rôle :</strong> {property.rlm05A}</p>
-                                                        <p><strong>Code version rôle :</strong> {property.rlm06A}</p>
-                                                    </div>
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Titre de l'évaluateur signataire du rôle :</strong> {property.rl0602A}</p>
-                                                        <p><strong>Code organisme responsable :</strong> {property.rlm07A}</p>
-                                                    </div>
-                                                </div>
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Évaluateur responsable</h4>
+                                                <template if:true={property.displayRl0601A}>
+                                                    <p><strong>Nom :</strong> {property.displayRl0601A}</p>
+                                                </template>
+                                                <template if:true={property.displayRl0601B}>
+                                                    <p><strong>Prénom :</strong> {property.displayRl0601B}</p>
+                                                </template>
+                                                <template if:true={property.displayRl0602A}>
+                                                    <p><strong>Titre :</strong> {property.displayRl0602A}</p>
+                                                </template>
                                             </div>
                                             
-                                            <!-- Groupe Organisme et signature -->
+                                            <!-- Organisme et signature -->
                                             <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">🏛️ Groupe Organisme et signature</h4>
-                                                <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Nom de l'organisme municipal responsable du rôle d'évaluation :</strong> {property.rl0603A}</p>
-                                                        <p><strong>Date de la signature par l'évaluateur :</strong> {property.rl0604A}</p>
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Organisme et signature</h4>
+                                                <template if:true={property.displayRl0603A}>
+                                                    <p><strong>Organisme municipal responsable :</strong> {property.displayRl0603A}</p>
+                                                </template>
+                                                <template if:true={property.displayRl0604A}>
+                                                    <p><strong>Date de signature :</strong> {property.displayRl0604A}</p>
+                                                </template>
+                                                <template if:true={property.displayRl0605A}>
+                                                    <p><strong>Lieu de signature :</strong> {property.displayRl0605A}</p>
+                                                </template>
                                                     </div>
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Lieu de la signature par l'évaluateur :</strong> {property.rl0605A}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
                                         </div>
                                     </lightning-accordion-section>
                                     
                                     <!-- SECTION 7 : Informations annexables globales -->
                                     <lightning-accordion-section name="section7" label="📊 Section 7 : Informations annexables globales">
                                         <div class="slds-p-around_medium">
-                                            
-                                            <!-- Groupe Métadonnées globales -->
+                                            <!-- Informations du rôle (global) -->
                                             <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">🌐 Groupe Métadonnées globales</h4>
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Informations du rôle</h4>
+                                                <template if:true={property.displayRlzg0001}>
+                                                    <p><strong>Version des informations :</strong> {property.displayRlzg0001}</p>
+                                                </template>
+                                                <template if:true={property.displayRlzg0002}>
+                                                    <p><strong>Date de mise à jour :</strong> {property.displayRlzg0002}</p>
+                                                </template>
+                                            </div>
+
+                                            <!-- Sections spéciales RLZU (globales) -->
+                                            <div class="slds-box slds-m-bottom_medium">
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Sections spéciales</h4>
                                                 <div class="slds-grid slds-wrap slds-gutters">
                                                     <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Version des informations :</strong> {property.rlzg0001}</p>
+                                                        <template if:true={property.displayRlzu3001A}>
+                                                            <p><strong>Autre superficie :</strong> {property.displayRlzu3001A}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRlzu3001B}>
+                                                            <p><strong>Type superficie :</strong> {property.displayRlzu3001B}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRlzu3001C}>
+                                                            <p><strong>Description superficie :</strong> {property.displayRlzu3001C}</p>
+                                                        </template>
                                                     </div>
                                                     <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Date de mise à jour :</strong> {property.rlzg0002}</p>
+                                                        <template if:true={property.displayRlzu5001A}>
+                                                            <p><strong>Pourcentage copropriété :</strong> {property.displayRlzu5001A}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRlzu5001B}>
+                                                            <p><strong>Type copropriété :</strong> {property.displayRlzu5001B}</p>
+                                                        </template>
+                                                        <template if:true={property.displayRlzu5001C}>
+                                                            <p><strong>Description copropriété :</strong> {property.displayRlzu5001C}</p>
+                                                        </template>
                                                     </div>
                                                 </div>
                                             </div>
-                                            
                                         </div>
                                     </lightning-accordion-section>
                                     
                                     <!-- SECTION 8 : Renseignements annexables de l'unité -->
                                     <lightning-accordion-section name="section8" label="🏢 Section 8 : Renseignements annexables de l'unité">
                                         <div class="slds-p-around_medium">
-                                            
                                             <!-- Logements (RLZU1007) -->
                                             <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">🏠 Logements (RLZU1007)</h4>
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Logements</h4>
                                                 <template if:true={property.rlzu1007Details}>
                                                     <template if:true={property.rlzu1007Details.length}>
                                                         <template for:each={property.rlzu1007Details} for:item="logement">
                                                             <div key={logement.numeroLogement} class="slds-grid slds-wrap slds-gutters">
-                                                                <div class="slds-col slds-size_1-of-2">
+                                                                <div class="slds-col slds-size_1-of-1">
                                                                     <p><strong>Numéro logement :</strong> {logement.numeroLogement}</p>
                                                                 </div>
-                                                                <div class="slds-col slds-size_1-of-2">
+                                                                <div class="slds-col slds-size_1-of-1">
                                                                     <p><strong>Superficie logement :</strong> {logement.superficieLogement}</p>
                                                                 </div>
                                                             </div>
@@ -836,19 +656,19 @@
                                                     </template>
                                                 </template>
                                             </div>
-                                            
+
                                             <!-- Terrains (RLZU1008) -->
                                             <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">🌱 Terrains (RLZU1008)</h4>
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Terrains</h4>
                                                 <template if:true={property.rlzu1008Details}>
                                                     <template if:true={property.rlzu1008Details.length}>
                                                         <template for:each={property.rlzu1008Details} for:item="terrain">
                                                             <div key={terrain.numero} class="slds-grid slds-wrap slds-gutters">
-                                                                <div class="slds-col slds-size_1-of-2">
+                                                                <div class="slds-col slds-size_1-of-1">
                                                                     <p><strong>Numéro :</strong> {terrain.numero}</p>
                                                                     <p><strong>Frontage :</strong> {terrain.frontage}</p>
                                                                 </div>
-                                                                <div class="slds-col slds-size_1-of-2">
+                                                                <div class="slds-col slds-size_1-of-1">
                                                                     <p><strong>Superficie :</strong> {terrain.superficie}</p>
                                                                     <p><strong>Forme du terrain :</strong> {terrain.formeTerrain}</p>
                                                                 </div>
@@ -860,19 +680,19 @@
                                                     </template>
                                                 </template>
                                             </div>
-                                            
+
                                             <!-- Bâtiments (RLZU2001) -->
                                             <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">🏗️ Bâtiments (RLZU2001)</h4>
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Bâtiments</h4>
                                                 <template if:true={property.rlzu2001Details}>
                                                     <template if:true={property.rlzu2001Details.length}>
                                                         <template for:each={property.rlzu2001Details} for:item="batiment">
                                                             <div key={batiment.numeroBatiment} class="slds-grid slds-wrap slds-gutters">
-                                                                <div class="slds-col slds-size_1-of-2">
+                                                                <div class="slds-col slds-size_1-of-1">
                                                                     <p><strong>Numéro bâtiment :</strong> {batiment.numeroBatiment}</p>
                                                                     <p><strong>Coût de remplacement :</strong> {batiment.coutRemplacement}</p>
                                                                 </div>
-                                                                <div class="slds-col slds-size_1-of-2">
+                                                                <div class="slds-col slds-size_1-of-1">
                                                                     <p><strong>Classe :</strong> {batiment.classe}</p>
                                                                     <p><strong>Type construction :</strong> {batiment.typeConstruction}</p>
                                                                 </div>
@@ -884,46 +704,28 @@
                                                     </template>
                                                 </template>
                                             </div>
-                                            
+
                                             <!-- Usage et construction -->
                                             <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">🔧 Usage et construction</h4>
+                                                <h4 class="slds-text-heading_small slds-m-bottom_small">Usage et construction</h4>
                                                 <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Usage principal :</strong> {property.rlzu3005A}</p>
-                                                        <p><strong>Sous-usage :</strong> {property.rlzu3005B}</p>
-                                                        <p><strong>Logement accessoire :</strong> {property.rlzu3005C}</p>
-                                                        <p><strong>Revenus :</strong> {property.rlzu3006B}</p>
-                                                        <p><strong>Code de construction :</strong> {property.rlzu3007x}</p>
+                                                    <div class="slds-col slds-size_1-of-1 slds-m-bottom_small">
+                                                        <template if:true={property.displayRlzu3005A}><p><strong>Usage principal :</strong> {property.displayRlzu3005A}</p></template>
+                                                        <template if:true={property.displayRlzu3005B}><p><strong>Sous-usage :</strong> {property.displayRlzu3005B}</p></template>
+                                                        <template if:true={property.displayRlzu3005C}><p><strong>Logement accessoire :</strong> {property.displayRlzu3005C}</p></template>
+                                                        <template if:true={property.displayRlzu3006B}><p><strong>Revenus :</strong> {property.displayRlzu3006B}</p></template>
+                                                        <template if:true={property.displayRlzu3007x}><p><strong>Code de construction :</strong> {property.displayRlzu3007x}</p></template>
                                                     </div>
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Date début évaluation :</strong> {property.rlzu3101}</p>
-                                                        <p><strong>Date mise en vigueur :</strong> {property.rlzu3102}</p>
-                                                        <p><strong>Date fin validité :</strong> {property.rlzu3103}</p>
-                                                        <p><strong>Valeur au rôle :</strong> {property.rlzu3104}</p>
-                                                        <p><strong>Valeur terrain municipale :</strong> {property.rlzu4001}</p>
-                                                        <p><strong>Valeur bâtiment municipale :</strong> {property.rlzu4002}</p>
+                                                    <div class="slds-col slds-size_1-of-1">
+                                                        <template if:true={property.displayRlzu3101}><p><strong>Date début évaluation :</strong> {property.displayRlzu3101}</p></template>
+                                                        <template if:true={property.displayRlzu3102}><p><strong>Date mise en vigueur :</strong> {property.displayRlzu3102}</p></template>
+                                                        <template if:true={property.displayRlzu3103}><p><strong>Date fin validité :</strong> {property.displayRlzu3103}</p></template>
+                                                        <template if:true={property.displayRlzu3104}><p><strong>Valeur au rôle :</strong> {property.displayRlzu3104}</p></template>
+                                                        <template if:true={property.displayRlzu4001}><p><strong>Valeur terrain municipale :</strong> {property.displayRlzu4001}</p></template>
+                                                        <template if:true={property.displayRlzu4002}><p><strong>Valeur bâtiment municipale :</strong> {property.displayRlzu4002}</p></template>
                                                     </div>
                                                 </div>
                                             </div>
-                                            
-                                            <!-- Sections spéciales RLZU -->
-                                            <div class="slds-box slds-m-bottom_medium">
-                                                <h4 class="slds-text-heading_small slds-m-bottom_small">🔍 Sections spéciales RLZU</h4>
-                                                <div class="slds-grid slds-wrap slds-gutters">
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Autre superficie :</strong> {property.rlzu3001A}</p>
-                                                        <p><strong>Type superficie :</strong> {property.rlzu3001B}</p>
-                                                        <p><strong>Description superficie :</strong> {property.rlzu3001C}</p>
-                                                    </div>
-                                                    <div class="slds-col slds-size_1-of-2">
-                                                        <p><strong>Pourcentage copropriété :</strong> {property.rlzu5001A}</p>
-                                                        <p><strong>Type copropriété :</strong> {property.rlzu5001B}</p>
-                                                        <p><strong>Description copropriété :</strong> {property.rlzu5001C}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
                                         </div>
                                     </lightning-accordion-section>
                                     

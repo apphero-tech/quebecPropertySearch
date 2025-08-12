@@ -13,7 +13,7 @@
     <isOmniPinnedViewEnabled>false</isOmniPinnedViewEnabled>
     <label>Property Search</label>
     <navType>Standard</navType>
-    <tabs>Search</tabs>
+    <!-- Removed custom tab 'Search' for cross-org compatibility -->
     <tabs>standard-Case</tabs>
     <tabs>standard-Account</tabs>
     <tabs>standard-Contact</tabs>

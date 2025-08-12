@@ -995,8 +995,305 @@ public with sharing class AddressSearchController {
     
 
     @AuraEnabled
-    public static String saveCompleteProperty(String mongoData) {
-        System.debug('Données reçues: ' + mongoData);
-        return 'Données reçues avec succès - ' + mongoData.length() + ' caractères';
+    public static String saveCompleteProperty(String propertyData) {
+        try {
+            System.debug('=== SAUVEGARDE COMPLETE (DOM -> APEX) ===');
+            System.debug('propertyData reçu: ' + propertyData);
+            if (String.isBlank(propertyData)) {
+                throw new AuraHandledException('Données vides reçues');
+            }
+
+            Map<String, Object> data = (Map<String, Object>) JSON.deserializeUntyped(propertyData);
+            System.debug('Données parsées: ' + data);
+
+            // Extraction sûre des valeurs utiles
+            String matricule = data.containsKey('matricule') ? String.valueOf(data.get('matricule')) : null;
+            String ownerNameRaw = data.containsKey('ownerName') ? String.valueOf(data.get('ownerName')) : null;
+            String totalValueStr = data.containsKey('totalValue') ? String.valueOf(data.get('totalValue')) : null;
+            String postalCode = data.containsKey('postalCode') ? String.valueOf(data.get('postalCode')) : null;
+            String fullAddress = data.containsKey('address') ? String.valueOf(data.get('address')) : null;
+
+            // Normaliser les placeholders
+            if (matricule != null && (matricule.trim().toLowerCase() == 'non disponible' || matricule.trim() == '-' || matricule.trim().toLowerCase() == 'n/a' || matricule.trim() == '')) {
+                matricule = null;
+            }
+            if (ownerNameRaw != null && (ownerNameRaw.trim().toLowerCase() == 'non disponible' || ownerNameRaw.trim() == '-' || ownerNameRaw.trim().toLowerCase() == 'n/a')) {
+                ownerNameRaw = null;
+            }
+            if (totalValueStr != null && (totalValueStr.trim().toLowerCase() == 'non disponible' || totalValueStr.trim() == '-' || totalValueStr.trim().toLowerCase() == 'n/a' || totalValueStr.trim() == '')) {
+                totalValueStr = null;
+            }
+            if (postalCode != null && (postalCode.trim().toLowerCase() == 'non disponible' || postalCode.trim() == '-' || postalCode.trim().toLowerCase() == 'n/a' || postalCode.trim() == '')) {
+                postalCode = null;
+            }
+            if (fullAddress != null && (fullAddress.trim().toLowerCase() == 'non disponible' || fullAddress.trim() == '-' || fullAddress.trim().toLowerCase() == 'n/a' || fullAddress.trim() == '')) {
+                fullAddress = null;
+            }
+
+            System.debug('Valeurs extraites: matricule=' + matricule + ', ownerNameRaw=' + ownerNameRaw + ', totalValueStr=' + totalValueStr + ', postalCode=' + postalCode + ', address=' + fullAddress);
+
+            if (String.isBlank(matricule)) {
+                throw new AuraHandledException('Matricule requis manquant');
+            }
+
+            // Upsert Property__c par External_ID__c (matricule)
+            Map<String, Object> propertyFields = new Map<String, Object>();
+            if (!String.isBlank(postalCode)) propertyFields.put('Postal_Code__c', postalCode);
+            // Optionnel: on pourrait parser l'adresse complète plus tard
+            Property__c propertyRec = upsertProperty(matricule, propertyFields);
+            System.debug('Property__c Id=' + propertyRec.Id);
+
+            // Préparer Owner__c (split "NOM, PRENOM" si disponible)
+            Id ownerId;
+            if (!String.isBlank(ownerNameRaw)) {
+                String legalName;
+                String firstName;
+                if (ownerNameRaw.contains(',')) {
+                    List<String> parts = ownerNameRaw.split(',');
+                    legalName = parts.size() > 0 ? parts[0].trim() : null;
+                    firstName = parts.size() > 1 ? parts[1].trim() : null;
+                } else {
+                    // Pas de virgule: tout dans nom légal
+                    legalName = ownerNameRaw.trim();
+                    firstName = null;
+                }
+                Map<String, Object> ownerFields = new Map<String, Object>();
+                if (!String.isBlank(legalName)) ownerFields.put('Legal_name_of_owner__c', legalName);
+                if (!String.isBlank(firstName)) ownerFields.put('Owner_first_name__c', firstName);
+
+                Owner__c ownerRec = upsertOwner(ownerFields, propertyRec.Id);
+                ownerId = ownerRec != null ? ownerRec.Id : null;
+                System.debug('Owner__c Id=' + ownerId);
+            }
+
+            // Créer Assessment__c
+            Map<String, Object> assessInput = new Map<String, Object>();
+            if (!String.isBlank(totalValueStr)) {
+                assessInput.put('total_value', totalValueStr);
+            }
+            Assessment__c assessmentRec = createAssessment(propertyRec.Id, ownerId, assessInput);
+            System.debug('Assessment__c Id=' + assessmentRec.Id);
+
+            // Retour JSON avec IDs
+            Map<String, String> result = new Map<String, String>();
+            result.put('status', 'success');
+            result.put('propertyId', propertyRec.Id);
+            if (ownerId != null) result.put('ownerId', ownerId);
+            result.put('assessmentId', assessmentRec.Id);
+            String jsonOut = JSON.serialize(result);
+            System.debug('saveCompleteProperty result=' + jsonOut);
+            return jsonOut;
+
+        } catch (Exception e) {
+            System.debug('Erreur complète: ' + e.getMessage() + ' - ' + e.getStackTraceString());
+            throw new AuraHandledException('Erreur sauvegarde: ' + e.getMessage());
+        }
+    }
+
+    // =============================
+    // Helpers persistance & mapping
+    // =============================
+
+    // Ancien mécanisme (remplacé par passage explicite de l'Id propriété)
+    private static Id s_currentPropertyId;
+
+    private static String extractMatricule(Map<String, Object> data) {
+        try {
+            System.debug('=== EXTRACT MATRICULE DEBUG ===');
+            if (data == null) {
+                System.debug('Data null');
+                return null;
+            }
+            System.debug('Clés racine du document: ' + String.valueOf(data.keySet()));
+            Object rluexObj = data.get('RLUEx');
+            if (rluexObj == null) {
+                System.debug('RLUEx est null');
+                return null;
+            }
+            System.debug('Type de RLUEx (stringified): ' + String.valueOf(rluexObj));
+            if (!(rluexObj instanceof Map<String, Object>)) {
+                System.debug('RLUEx n est pas une Map');
+                return null;
+            }
+            Map<String, Object> rluex = (Map<String, Object>) rluexObj;
+            System.debug('Clés dans RLUEx: ' + String.valueOf(rluex.keySet()));
+            Object matriculeObj = rluex.get('RL0106A');
+            System.debug('RL0106A trouvé: ' + matriculeObj);
+            return matriculeObj != null ? String.valueOf(matriculeObj) : null;
+        } catch (Exception e) {
+            System.debug('Erreur extractMatricule: ' + e.getMessage());
+            return null;
+        }
+    }
+
+    private static Map<String, Object> extractPropertyData(Map<String, Object> data) {
+        Map<String, Object> out = new Map<String, Object>();
+        if (data == null) return out;
+        try {
+            // Exemple: extraire quelques champs simples si disponibles
+            Object rluexObj = data.get('RLUEx');
+            if (rluexObj instanceof Map<String, Object>) {
+                Map<String, Object> rluex = (Map<String, Object>) rluexObj;
+                Object rl0101Obj = rluex.get('RL0101');
+                if (rl0101Obj instanceof Map<String, Object>) {
+                    Map<String, Object> rl0101 = (Map<String, Object>) rl0101Obj;
+                    Object rl0101xObj = rl0101.get('RL0101x');
+                    if (rl0101xObj instanceof Map<String, Object>) {
+                        Map<String, Object> addr = (Map<String, Object>) rl0101xObj;
+                        if (addr.get('RL0101Gx') != null) out.put('Street_name__c', String.valueOf(addr.get('RL0101Gx')));
+                        if (addr.get('RL0101Nx') != null) out.put('Postal_Code__c', String.valueOf(addr.get('RL0101Nx')));
+                        if (addr.get('RL0101Ax') != null) out.put('Building_number__c', String.valueOf(addr.get('RL0101Ax')));
+                        if (addr.get('RL0101Dx') != null) out.put('Apartment_number__c', String.valueOf(addr.get('RL0101Dx')));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.debug('extractPropertyData warning: ' + e.getMessage());
+        }
+        return out;
+    }
+
+    private static Map<String, Object> extractOwnerData(Map<String, Object> data) {
+        Map<String, Object> out = new Map<String, Object>();
+        if (data == null) return out;
+        try {
+            Object rluexObj = data.get('RLUEx');
+            if (rluexObj instanceof Map<String, Object>) {
+                Map<String, Object> rluex = (Map<String, Object>) rluexObj;
+                Object rl0201Obj = rluex.get('RL0201');
+                if (rl0201Obj instanceof Map<String, Object>) {
+                    Map<String, Object> rl0201 = (Map<String, Object>) rl0201Obj;
+                    Object rl0201xObj = rl0201.get('RL0201x');
+                    if (rl0201xObj instanceof Map<String, Object>) {
+                        Map<String, Object> owner = (Map<String, Object>) rl0201xObj;
+                        if (owner.get('RL0201Ax') != null) out.put('Legal_name_of_owner__c', String.valueOf(owner.get('RL0201Ax')));
+                        if (owner.get('RL0201Bx') != null) out.put('Owner_first_name__c', String.valueOf(owner.get('RL0201Bx')));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.debug('extractOwnerData warning: ' + e.getMessage());
+        }
+        return out;
+    }
+
+    private static Property__c upsertProperty(String matricule, Map<String, Object> propertyData) {
+        if (String.isBlank(matricule)) {
+            System.debug('Matricule vide/absent dans upsertProperty. propertyData keys=' + (propertyData == null ? 'null' : String.valueOf(propertyData.keySet())));
+            System.debug('AVANT ligne 1172 - variables état: matricule=' + matricule + ', propertyData keys=' + (propertyData == null ? 'null' : String.valueOf(propertyData.keySet())));
+            throw new AuraHandledException('Matricule manquant pour Property__c');
+        }
+        System.debug('upsertProperty: recherche Property__c par External_ID__c=' + matricule);
+        List<Property__c> propFound = [SELECT Id, External_ID__c FROM Property__c WHERE External_ID__c = :matricule LIMIT 1];
+        Property__c existing = propFound.isEmpty() ? null : propFound[0];
+        if (existing != null) {
+            // Mise à jour légère des champs optionnels
+            applyPropertyData(existing, propertyData);
+            update existing;
+            return existing;
+        }
+        Property__c rec = new Property__c();
+        rec.External_ID__c = matricule;
+        try {
+            applyPropertyData(rec, propertyData);
+        } catch (Exception e) {
+            System.debug('applyPropertyData error: ' + e.getMessage());
+        }
+        insert rec;
+        return rec;
+    }
+
+    private static void applyPropertyData(SObject target, Map<String, Object> data) {
+        if (target == null || data == null || data.isEmpty()) return;
+        // Applique uniquement les clés connues si présentes, en validant les types
+        Object v;
+        if (data.containsKey('Street_name__c')) {
+            v = data.get('Street_name__c');
+            if (v != null) target.put('Street_name__c', String.valueOf(v));
+        }
+        if (data.containsKey('Postal_Code__c')) {
+            v = data.get('Postal_Code__c');
+            if (v != null) target.put('Postal_Code__c', String.valueOf(v));
+        }
+        if (data.containsKey('Building_number__c')) {
+            v = data.get('Building_number__c');
+            if (v != null) target.put('Building_number__c', String.valueOf(v));
+        }
+        if (data.containsKey('Apartment_number__c')) {
+            v = data.get('Apartment_number__c');
+            if (v != null) target.put('Apartment_number__c', String.valueOf(v));
+        }
+    }
+
+    private static Owner__c upsertOwner(Map<String, Object> ownerData, Id propertyId) {
+        // Heuristique: dédoublonner par (Property__c, Legal_name_of_owner__c, Owner_first_name__c)
+        String legalName = (String) ownerData.get('Legal_name_of_owner__c');
+        String firstName = (String) ownerData.get('Owner_first_name__c');
+        if (String.isBlank(legalName)) {
+            // Sans nom légal, on tente de ne rien créer; retourner null
+            return null;
+        }
+        Owner__c existing = null;
+        if (propertyId != null) {
+            if (String.isBlank(firstName)) {
+                List<Owner__c> found = [
+                    SELECT Id, Property__c, Legal_name_of_owner__c, Owner_first_name__c
+                    FROM Owner__c
+                    WHERE Property__c = :propertyId
+                      AND Legal_name_of_owner__c = :legalName
+                    LIMIT 1
+                ];
+                existing = found.isEmpty() ? null : found[0];
+            } else {
+                List<Owner__c> found = [
+                    SELECT Id, Property__c, Legal_name_of_owner__c, Owner_first_name__c
+                    FROM Owner__c
+                    WHERE Property__c = :propertyId
+                      AND Legal_name_of_owner__c = :legalName
+                      AND Owner_first_name__c = :firstName
+                    LIMIT 1
+                ];
+                existing = found.isEmpty() ? null : found[0];
+            }
+        }
+        if (existing != null) {
+            return existing;
+        }
+        if (propertyId == null) {
+            throw new AuraHandledException('Property__c introuvable pour création Owner__c');
+        }
+        Owner__c rec = new Owner__c();
+        rec.Property__c = propertyId;
+        if (legalName != null) rec.Legal_name_of_owner__c = legalName;
+        if (firstName != null) rec.Owner_first_name__c = firstName;
+        insert rec;
+        return rec;
+    }
+
+    private static Assessment__c createAssessment(Id propertyId, Id ownerId, Map<String, Object> data) {
+        if (propertyId == null) {
+            throw new AuraHandledException('PropertyId manquant pour créer Assessment__c');
+        }
+        Assessment__c rec = new Assessment__c();
+        rec.Property__c = propertyId;
+        if (ownerId != null) rec.Owner__c = ownerId;
+        // Extraire quelques informations si disponibles
+        String yearVal;
+        Decimal totalVal;
+        try {
+            Object y = data == null ? null : data.get('assessment_year');
+            if (y == null && data != null) y = data.get('year');
+            if (y != null) yearVal = String.valueOf(y).left(4);
+        } catch (Exception e) {}
+        try {
+            Object v = data == null ? null : data.get('total_value');
+            if (v == null && data != null) v = data.get('Property_value__c');
+            if (v != null) totalVal = Decimal.valueOf(String.valueOf(v));
+        } catch (Exception e) {}
+        if (yearVal != null) rec.Assessment_Year__c = yearVal;
+        if (totalVal != null) rec.Total_Value__c = totalVal;
+        rec.Is_Current__c = false;
+        insert rec;
+        return rec;
     }
 } 
